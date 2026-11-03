@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市合成</title>
+    <script src="guess-district/js/district-info.js"></script>
+    <!-- 引入 PeerJS 联机库 -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1e293b; height: 100vh; display: flex; justify-content: center; padding: 15px; }
+        .app { width: 100%; max-width: 1100px; background: #ffffff; border-radius: 16px; display: flex; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        /* 左侧：接龙与操作区 */
+        .main-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; }
+        .header { padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { font-size: 20px; color: #3b82f6; }
+        .current-state { background: #ffffff; padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: right; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .current-state .label { font-size: 12px; color: #64748b; }
+        .current-state .value { font-size: 18px; font-weight: bold; color: #f59e0b; letter-spacing: 1px; }
+
+        .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #ffffff; }
+        .msg { padding: 12px 16px; border-radius: 10px; font-size: 15px; line-height: 1.5; max-width: 90%; word-break: break-all; }
+        .msg.user { background: #e0f2fe; color: #0369a1; align-self: flex-end; border-bottom-right-radius: 2px; border-bottom-left-radius: 10px; font-weight: bold; border: 1px solid #bae6fd; }
+        .msg.user.other { background: #f1f5f9; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; border-bottom-right-radius: 10px; font-weight: normal; border: 1px solid #e2e8f0; }
+        .msg.sys { background: #f8fafc; color: #94a3b8; align-self: center; border-radius: 12px; font-size: 12px; padding: 6px 12px; }
+        .msg.success { background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid #34d399; align-self: flex-start; font-weight: bold; }
+        .msg.error { background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid #f87171; align-self: flex-start; font-weight: bold; }
+
+        .input-area { padding: 15px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
+        .input-row { display: flex; gap: 10px; }
+        input { flex: 1; padding: 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #1e293b; font-size: 16px; outline: none; }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+        button { padding: 0 25px; border-radius: 8px; border: none; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-submit { background: #3b82f6; }
+        .btn-submit:hover { background: #2563eb; }
+        .btn-restart { background: #ef4444; width: 100%; padding: 10px; margin-top: 5px; font-size: 14px; }
+        .btn-restart:hover { background: #dc2626; }
+
+        /* 右侧：历史记录 */
+        .side-panel { width: 320px; background: #f8fafc; display: flex; flex-direction: column; }
+        .side-header { padding: 15px; background: #f1f5f9; text-align: center; font-weight: bold; color: #475569; display: flex; flex-direction: column; gap: 5px; border-bottom: 1px solid #e2e8f0; }
+        .side-header .sub-text { font-size: 12px; color: #94a3b8; font-weight: normal; }
+        .used-list { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .used-item { background: #ffffff; padding: 8px 12px; border-radius: 6px; font-size: 14px; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; color: #475569; line-height: 1.4; }
+        .used-item.active { border-left-color: #f59e0b; background: #fffbeb; color: #1e293b; font-weight: bold; box-shadow: 0 2px 8px rgba(245,158,11,0.1); }
+        .used-item.result { border-left-color: #10b981; }
+        .used-item span { color: #3b82f6; font-weight: bold; margin-right: 5px; }
+
+        /* 弹窗 */
+        #ambiguityModal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 10000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #ffffff; padding: 25px; border-radius: 12px;
+            border: 1px solid #e2e8f0; max-width: 400px; width: 90%; text-align: center;
+            max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .modal-content h3 { color: #1e293b; margin-bottom: 15px; font-size: 18px; }
+        .modal-content p { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+        .modal-btn {
+            display: block; width: 100%; padding: 12px; margin-bottom: 10px;
+            background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            text-align: left;
+        }
+        .modal-btn:hover { background: #e2e8f0; border-color: #94a3b8; }
+        
+        /* 房间成员列表样式 */
+        #playerListContainer { display: none; padding: 10px 15px; background: #ffffff; border-bottom: 1px solid #e2e8f0; }
+        #playerListContainer h4 { font-size: 13px; color: #64748b; margin-bottom: 8px; font-weight: bold; }
+        #playerList { display: flex; flex-wrap: wrap; gap: 6px; }
+        .player-tag { background: #e0f2fe; color: #0284c7; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; border: 1px solid #bae6fd; }
+        .player-tag.host { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="main-panel">
+        <div class="header">
+            <h2>🧩 城市合成</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button id="btnOpenRoom" style="padding: 6px 12px; font-size: 14px; background: #3b82f6; border-radius: 6px;">🌐 联机大厅</button>
+                <div id="roomInfoBadge" style="display:none; font-size:12px; background:#e0f2fe; color:#0284c7; padding:6px 10px; border-radius:6px; font-weight:bold; cursor:pointer;" title="点击复制房间号">房间号: <span id="currentRoomId"></span> 📋</div>
+                <button id="btnLeaveRoom" style="display:none; padding: 6px 12px; font-size: 14px; background: #ef4444; border-radius: 6px;">退出房间</button>
+            </div>
+            <div class="current-state" style="margin-right:10px; background:#ffffff;">
+                <div class="label">玩家昵称</div>
+                <input type="text" id="playerName" value="玩家1" style="width:80px; padding:4px; border-radius:4px; border:1px solid #cbd5e1; text-align:center; font-size:14px;" autocomplete="off">
+            </div>
+            <div class="current-state">
+                <div class="label">当前需接区县</div>
+                <div class="value" id="poolDisplay">空</div>
+            </div>
+        </div>
+        
+        <div class="chat-area" id="chatArea"></div>
+
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" id="formulaInput" placeholder="必须使用当前需接区县..." autocomplete="off">
+                <button class="btn-submit" id="submitBtn">接龙</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="customStartInput" placeholder="指定开局区县（可选）..." style="flex: 1; padding: 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <button class="btn-restart" id="restartBtn" style="margin-top: 0; width: auto; flex: 0 0 auto; padding: 0 20px;">🔄 新游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <div id="playerListContainer">
+            <h4>👥 房间成员</h4>
+            <div id="playerList"></div>
+        </div>
+        <div class="side-header">
+            📦 合成历史记录
+            <div class="sub-text">（所有出现过的地名均已永久消耗）</div>
+        </div>
+        <div class="used-list" id="usedList"></div>
+    </div>
+</div>
+
+<!-- 重名弹窗 -->
+<div id="ambiguityModal">
+    <div class="modal-content">
+        <h3>🤔 发现重名区县</h3>
+        <p id="ambiguityText">请选择您要使用的具体区县：</p>
+        <div id="ambiguityOptions"></div>
+    </div>
+</div>
+
+<!-- 联机大厅 -->
+<div id="roomModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:20000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:25px; border-radius:12px; width:320px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <h3 style="margin-bottom:20px; color:#1e293b;">🌐 联机对战</h3>
+        <button id="btnCreateRoom" style="width:100%; padding:12px; margin-bottom:15px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer;">创建新房间</button>
+        <div style="display:flex; gap:8px; margin-bottom:20px;">
+            <input type="text" id="inputJoinRoom" placeholder="输入6位房间号" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:8px; text-transform:uppercase;">
+            <button id="btnJoinRoom" style="padding:0 16px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer;">加入</button>
+        </div>
+        <button id="btnCloseRoomModal" style="width:100%; padding:10px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; cursor:pointer;">关闭</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. DOM 获取
+    // ==========================================
+    const chatArea = document.getElementById('chatArea');
+    const inputEl = document.getElementById('formulaInput');
+    const poolDisplay = document.getElementById('poolDisplay');
+    const usedListEl = document.getElementById('usedList');
+    const submitBtn = document.getElementById('submitBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const playerNameInput = document.getElementById('playerName');
+
+    // ===== PeerJS 联机核心 =====
+    const myPlayerId = Math.random().toString(36).substring(2, 9);
+    let peer = null;
+    let isHost = false;
+    let roomId = null;
+    let connections = []; // 房主保存所有玩家的连接
+    let hostConn = null;  // 玩家保存与房主的连接
+    let roomPlayers = {}; // 当前房间里的玩家列表 { peerId: '昵称' }
+
+    const roomModal = document.getElementById('roomModal');
+    const btnOpenRoom = document.getElementById('btnOpenRoom');
+    const roomInfoBadge = document.getElementById('roomInfoBadge');
+    const currentRoomIdSpan = document.getElementById('currentRoomId');
+
+    // UI 绑定
+    btnOpenRoom.addEventListener('click', () => { roomModal.style.display = 'flex'; });
+    document.getElementById('btnCloseRoomModal').addEventListener('click', () => { roomModal.style.display = 'none'; });
+
+    // 创建房间
+    document.getElementById('btnCreateRoom').addEventListener('click', () => {
+        // 如果已有旧连接，直接静默销毁
+        if (peer) {
+            try { peer.destroy(); } catch (e) {}
+            peer = null; hostConn = null; connections = [];
+        }
+        roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        isHost = true;
+        peer = new Peer('citysyn-' + roomId, { debug: 1 });
+        
+        peer.on('open', () => {
+            roomModal.style.display = 'none';
+            roomInfoBadge.style.display = 'block';
+            btnLeaveRoom.style.display = 'block'; // 显示退出按钮
+            btnOpenRoom.style.display = 'none';   // 隐藏大厅按钮
+            currentRoomIdSpan.textContent = roomId;
+            chatArea.innerHTML = ''; // ★ 清空单机记录
+            // 初始化房间成员列表（房主）
+            roomPlayers = { 'host': playerNameInput.value };
+            updateRoomPlayers();
+            restartBtn.disabled = false;
+            restartBtn.style.opacity = '1';
+            document.getElementById('customStartInput').disabled = false;
+            document.getElementById('customStartInput').style.opacity = '1';
+            addMessage(`🏠 成功创建房间 <b>${roomId}</b>，等待玩家加入...`, 'sys');
+            initGame(true); // 传入 true 表示是房主开房，避免广播出错
+        });
+
+        peer.on('connection', (conn) => {
+            connections.push(conn);
+            
+            conn.on('data', (data) => handleHostReceive(conn, data));
+            
+            conn.on('error', (err) => {
+                console.error('连接错误:', err);
+            });
+            
+            conn.on('close', () => {
+                connections = connections.filter(c => c !== conn);
+                // 如果没有主动退出，且有名字，才提示“断开了连接”
+                if (conn.playerName && !conn.hasLeft) {
+                    delete roomPlayers[conn.peer];
+                    updateRoomPlayers();
+                    
+                    // 房主本地提示
+                    addMessage(`🚪 <b>${conn.playerName}</b> 断开了连接。`, 'sys');
+                    // 广播给其他玩家
+                    broadcastToAll({ type: 'system_msg', msg: `🚪 <b>${conn.playerName}</b> 断开了连接。` });
+                }
+            });
+        });
+
+        peer.on('error', (err) => {
+            alert('创建房间失败，请重试');
+            peer = null; isHost = false;
+        });
+    });
+
+    // 加入房间
+    document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        // 如果已有旧连接，直接静默销毁
+        if (peer) {
+            try { peer.destroy(); } catch (e) {}
+            peer = null; hostConn = null; connections = [];
+        }
+        const joinId = document.getElementById('inputJoinRoom').value.trim().toUpperCase();
+        if (joinId.length !== 6) { alert('请输入6位房间号'); return; }
+        
+        roomId = joinId;
+        isHost = false;
+        peer = new Peer(null, { debug: 1 });
+
+        peer.on('open', () => {
+            hostConn = peer.connect('citysyn-' + roomId, { reliable: true });
+            
+            // 注意：这里只剩下一层 on('open') 了
+            hostConn.on('open', () => {
+                roomModal.style.display = 'none';
+                roomInfoBadge.style.display = 'block';
+                btnLeaveRoom.style.display = 'block';
+                btnOpenRoom.style.display = 'none';
+                currentRoomIdSpan.textContent = roomId;
+                chatArea.innerHTML = ''; // 清空单机记录
+                restartBtn.disabled = true; // 玩家禁用新游戏
+                restartBtn.style.opacity = '0.5'; // 变灰
+                document.getElementById('customStartInput').disabled = true;
+                document.getElementById('customStartInput').style.opacity = '0.5';
+                addMessage(`🔗 已连接到房间 <b>${roomId}</b>，同步状态中...`, 'sys');
+                
+                // 稍微延迟一点发送，防止通道刚建好就发消息导致崩溃
+                setTimeout(() => {
+                    if (hostConn && hostConn.open) {
+                        hostConn.send({ type: 'join', senderId: myPlayerId, name: playerNameInput.value });
+                    }
+                }, 100);
+            });
+
+            hostConn.on('data', (data) => handleClientReceive(data));
+            
+            hostConn.on('close', () => {
+                // 如果 peer 还存在，说明是被动断开（不是自己点退出）
+                if (peer) {
+                    alert('❌ 与房主断开连接，已恢复单机模式');
+                    leaveRoom(false);
+                }
+            });
+        });
+
+        peer.on('error', (err) => {
+            alert('加入房间失败，房间不存在或已解散');
+            peer = null; hostConn = null;
+        });
+    });
+
+    // ===== 接收消息处理 =====
+
+    // 房主接收消息（包括玩家加入、玩家提交答案）
+    function handleHostReceive(conn, data) {
+        if (data.type === 'join') {
+            conn.playerName = data.name; // 记录玩家名字
+            roomPlayers[conn.peer] = data.name;
+            updateRoomPlayers();
+            
+            // 本地显示提示，然后广播给其他人
+            addMessage(`👋 <b>${data.name}</b> 加入了房间！`, 'sys');
+            broadcastToAll({ type: 'system_msg', msg: `👋 <b>${data.name}</b> 加入了房间！` });
+            
+            // 增加 open 判断，防止通道未就绪导致直接崩溃
+            if (conn.open) {
+                conn.send({ type: 'sync_state', state: { lastAnswer, usedItems, history, isNewPlayer: true } });
+            } else {
+                // 如果还没就绪，稍微延迟 100ms 再发
+                setTimeout(() => {
+                    if (conn.open) conn.send({ type: 'sync_state', state: { lastAnswer, usedItems, history, isNewPlayer: true } });
+                }, 100);
+            }
+        } else if (data.type === 'submit') {
+            executeSubmitLogic(data.input, data.senderId, data.senderName, conn);
+        } else if (data.type === 'leave') {
+            let leaveName = conn.playerName || data.name || '未知玩家';
+            conn.hasLeft = true; // 标记为主动退出
+            
+            delete roomPlayers[conn.peer];
+            updateRoomPlayers();
+            
+            // 本地显示提示，然后广播给其他人
+            addMessage(`🚪 <b>${leaveName}</b> 退出了房间。`, 'sys');
+            broadcastToAll({ type: 'system_msg', msg: `🚪 <b>${leaveName}</b> 退出了房间。` });
+        } else if (data.type === 'change_name') {
+            let oldName = conn.playerName;
+            let newName = data.newName;
+            if (oldName === newName) return;
+            
+            conn.playerName = newName;
+            roomPlayers[conn.peer] = newName;
+            updateRoomPlayers();
+            
+            let msg = `📝 <b>${oldName}</b> 将昵称更改为 <b>${newName}</b>`;
+            addMessage(msg, 'sys');
+            broadcastToAll({ type: 'system_msg', msg: msg });
+        } else if (data.type === 'chat') {
+            // 房主收到玩家聊天，本地渲染（灰色左侧），并广播给所有人（名字统一黑色）
+            let chatHtml = `<span style="color:#000000; font-size:12px; margin-right:6px;">[${data.senderName}]</span> ${data.text}`;
+            addMessage(chatHtml, 'user other');
+            broadcastToAll({ type: 'chat', text: data.text, senderId: data.senderId, senderName: data.senderName });
+        }
+    }
+
+    // 玩家接收消息（包括状态同步、判定结果广播）
+    function handleClientReceive(data) {
+        if (data.type === 'kick') {
+            alert(data.msg);
+            leaveRoom(false); // 不显示提示，直接走
+            return;
+        }
+        if (data.type === 'need_ambiguity') {
+            showAmbiguityModal(data.token, data.records, function(selectedFull) {
+                let newInput;
+                if (data.isRight) {
+                    newInput = data.originalLeft + '=' + selectedFull;
+                } else {
+                    // 替换左侧的这个词
+                    let newLeft = data.originalLeft.replace(data.token, selectedFull);
+                    newInput = newLeft + '=' + data.originalRight;
+                }
+                // 把选择后的结果再发给房主继续判定
+                if (hostConn && hostConn.open) {
+                    hostConn.send({
+                        type: 'submit',
+                        input: newInput,
+                        senderId: myPlayerId,
+                        senderName: playerNameInput.value
+                    });
+                }
+            });
+            return;
+        }
+        if (data.type === 'chat') {
+            let isMe = (data.senderId === myPlayerId);
+            let chatHtml = `<span style="color:#000000; font-size:12px; margin-right:6px;">[${data.senderName}]</span> ${data.text}`;
+            addMessage(chatHtml, isMe ? 'user' : 'user other');
+            return;
+        }
+        if (data.type === 'update_players') {
+            roomPlayers = data.players;
+            // 客户端只要渲染 UI 即可，不需要再广播
+            const container = document.getElementById('playerListContainer');
+            const list = document.getElementById('playerList');
+            const playerArray = Object.entries(roomPlayers);
+            if (playerArray.length > 0) {
+                container.style.display = 'block';
+                list.innerHTML = playerArray.map(([id, name]) => {
+                    let isHostName = (id === 'host');
+                    return `<span class="player-tag ${isHostName ? 'host' : ''}">${name}${isHostName ? ' (房主)' : ''}</span>`;
+                }).join('');
+            } else {
+                container.style.display = 'none';
+            }
+            return;
+        }
+        if (data.type === 'sync_state') {
+            // 一律清空当前聊天记录，准备迎接新状态
+            chatArea.innerHTML = ''; 
+            
+            lastAnswer = data.state.lastAnswer;
+            usedItems = data.state.usedItems;
+            history = data.state.history;
+            updateUI();
+            inputEl.value = lastAnswer + ' ';
+            inputEl.disabled = false;
+            submitBtn.disabled = false;
+            inputEl.placeholder = '必须包含当前需接区县...';
+            
+            if (data.state.isNewPlayer) {
+                addMessage(`🔗 <b>已进入房间！</b>当前需接区县：<span style="color:#38bdf8;font-weight:bold;">${lastAnswer}</span>`, 'sys');
+            } else {
+                addMessage(`
+                    👑 <b>房主开启了新游戏！</b><br>
+                    系统随机给出的初始地名是：<span style="color:#38bdf8;font-weight:bold;">${lastAnswer}</span><br>
+                    💡 <b>接龙规则：</b>你的算式左边<strong>必须包含</strong>当前需接区县 <code>${lastAnswer}</code>。<br>
+                    <span style="color:#ef4444;font-weight:bold;">注意：遇到重名区县会弹窗，用过的将永久消耗！</span>
+                `, 'sys');
+            }
+        } else if (data.type === 'system_msg') {
+            addMessage(data.msg, 'sys');
+        } else if (data.type === 'sync_chat_and_state') {
+            // 同步聊天记录和状态
+            lastAnswer = data.state.lastAnswer;
+            usedItems = data.state.usedItems;
+            history = data.state.history;
+            updateUI();
+            
+            // 判断是不是自己发的
+            let isMe = (data.senderId === myPlayerId);
+            addMessage(data.chatHtml, isMe ? 'user' : 'user other');
+            addMessage(data.resultHtml, data.isSuccess ? 'success' : 'error');
+            
+            if (data.isOver) {
+                inputEl.disabled = true;
+                submitBtn.disabled = true;
+                inputEl.placeholder = '游戏已终结，点击下方开启新游戏';
+            } else {
+                inputEl.value = lastAnswer + ' ';
+                inputEl.focus();
+                inputEl.disabled = false;
+                submitBtn.disabled = false;
+            }
+        }
+    }
+
+    function broadcastToAll(msg) {
+        if (!isHost) return;
+        connections.forEach(conn => { if (conn.open) conn.send(msg); });
+    }
+
+    // ===== 更新并广播房间成员列表 =====
+    function updateRoomPlayers() {
+        // 渲染 UI
+        const container = document.getElementById('playerListContainer');
+        const list = document.getElementById('playerList');
+        const playerArray = Object.entries(roomPlayers);
+        
+        if (playerArray.length > 0) {
+            container.style.display = 'block';
+            list.innerHTML = playerArray.map(([id, name]) => {
+                let isHostName = (id === 'host');
+                return `<span class="player-tag ${isHostName ? 'host' : ''}">${name}${isHostName ? ' (房主)' : ''}</span>`;
+            }).join('');
+        } else {
+            container.style.display = 'none';
+        }
+
+        // 房主广播最新列表
+        if (isHost) {
+            broadcastToAll({ type: 'update_players', players: roomPlayers });
+        }
+    }
+
+    // ===== 离开/解散房间逻辑 =====
+    function leaveRoom(showMsg = true) {
+        if (showMsg) addMessage('🔌 你已离开房间，恢复单机模式。', 'sys');
+        
+        if (peer) {
+            if (isHost) {
+                broadcastToAll({ type: 'kick', msg: '❌ 房主解散了房间！' });
+            } else if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'leave', name: playerNameInput.value });
+            }
+            peer.destroy(); // 销毁 Peer 断开所有连接
+        }
+        
+        peer = null;
+        isHost = false;
+        roomId = null;
+        connections = [];
+        hostConn = null;
+        
+        // 清空成员列表并隐藏 UI
+        roomPlayers = {};
+        updateRoomPlayers();
+
+        // UI 恢复单机
+        roomInfoBadge.style.display = 'none';
+        btnLeaveRoom.style.display = 'none';
+        btnOpenRoom.style.display = 'block';
+        
+        // 恢复新游戏按钮状态
+        restartBtn.disabled = false;
+        restartBtn.style.opacity = '1';
+        document.getElementById('customStartInput').disabled = false;
+        document.getElementById('customStartInput').style.opacity = '1';
+        inputEl.disabled = false;
+        submitBtn.disabled = false;
+        inputEl.placeholder = '必须包含当前需接区县...';
+
+        // 重新开启单机游戏
+        initGame();
+    }
+
+    // 退出房间按钮点击
+    const btnLeaveRoom = document.getElementById('btnLeaveRoom');
+    btnLeaveRoom.addEventListener('click', () => {
+        if (confirm(isHost ? '确定解散房间吗？' : '确定退出房间吗？')) {
+            leaveRoom();
+        }
+    });
+
+    // 复制房间号
+    roomInfoBadge.addEventListener('click', () => {
+        if (!roomId) return;
+        navigator.clipboard.writeText(roomId).then(() => {
+            const originalText = roomInfoBadge.innerHTML;
+            roomInfoBadge.innerHTML = '✅ 已复制!';
+            setTimeout(() => { roomInfoBadge.innerHTML = originalText; }, 1500);
+        }).catch(() => {
+            // 兼容本地 file:// 的备用复制方案
+            const ta = document.createElement('textarea');
+            ta.value = roomId;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            const originalText = roomInfoBadge.innerHTML;
+            roomInfoBadge.innerHTML = '✅ 已复制!';
+            setTimeout(() => { roomInfoBadge.innerHTML = originalText; }, 1500);
+        });
+    });
+
+    // ==========================================
+    // 2. 数据引擎：带归属地的完整区县数据
+    // ==========================================
+    // 补充了大量测试数据，特别是重名和特殊后缀
+    const RAW_STRUCTURED_DATA = `
+东城区|北京市|北京
+西城区|北京市|北京
+朝阳区（北京市）|北京市|北京
+丰台区|北京市|北京
+海淀区|北京市|北京
+平山区|辽宁省|本溪市
+平山县|河北省|石家庄市
+平城区|山西省|大同市
+平城区|山西省|大同市
+鼓楼区（南京市）|江苏省|南京市
+鼓楼区（徐州市）|江苏省|徐州市
+鼓楼区（福州市）|福建省|福州市
+市中区（济南市）|山东省|济南市
+市中区（乐山市）|四川省|乐山市
+市中区（内江市）|四川省|内江市
+市中区（枣庄市）|山东省|枣庄市
+城中区（西宁市）|青海省|西宁市
+城中区（柳州市）|广西|柳州市
+新市区（保定市）|河北省|保定市
+新市区（乌鲁木齐市）|新疆|乌鲁木齐市
+西市区（营口市）|辽宁省|营口市
+西市区（芜湖市）|安徽省|芜湖市
+辉县市|河南省|新乡市
+梁园区|河南省|商丘市
+梁平县|重庆市|重庆市
+芦山县|四川省|雅安市
+中山区（大连市）|辽宁省|大连市
+中山区（台北市）|台湾|台北市
+东区（攀枝花市）|四川省|攀枝花市
+西区（攀枝花市）|四川省|攀枝花市
+    `;
+
+    const DISTRICT_DB = []; // 存放 { full, province, city, proper }
+    const NAME_MAP = {}; // 全名 -> 记录
+    const PROPER_MAP = {}; // 专名 -> 记录数组（用于重名检测）
+
+    // ===== 照抄 game.js 的 ethnicGroups（带族 / 不带族 两种都放） =====
+    const ethnicGroups = [
+        '汉族','壮族','回族','满族','维吾尔族','苗族','彝族','土家族',
+        '藏族','蒙古族','侗族','布依族','瑶族','白族','朝鲜族','哈尼族',
+        '黎族','哈萨克族','傣族','畲族','傈僳族','东乡族','仡佬族','拉祜族',
+        '佤族','水族','纳西族','羌族','土族','仫佬族','锡伯族','柯尔克孜族',
+        '景颇族','达斡尔族','撒拉族','布朗族','毛南族','塔吉克族','普米族',
+        '阿昌族','怒族','鄂温克族','京族','基诺族','德昂族','保安族','俄罗斯族',
+        '裕固族','乌孜别克族','门巴族','鄂伦春族','独龙族','赫哲族','高山族','珞巴族','塔塔尔族',
+        '汉','壮','回','满','维吾尔','苗','彝','土家',
+        '藏','蒙古','侗','布依','瑶','白','朝鲜','哈尼',
+        '黎','哈萨克','傣','畲','傈僳','东乡','仡佬','拉祜',
+        '佤','水','纳西','羌','土','仫佬','锡伯','柯尔克孜',
+        '景颇','达斡尔','撒拉','布朗','毛南','塔吉克','普米',
+        '阿昌','怒','鄂温克','京','基诺','德昂','保安','俄罗斯',
+        '裕固','乌孜别克','门巴','鄂伦春','独龙','赫哲','高山','珞巴','塔塔尔',
+        '族'
+    ];
+
+    // 照抄 game.js 的 getAutonomousCore
+    function getAutonomousCore(name) {
+        if (!name.endsWith('自治州') && !name.endsWith('自治县')) return null;
+
+        const base = name
+            .replace(/自治州$/, '')
+            .replace(/自治县$/, '');
+
+        let core = base;
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const ethnic of ethnicGroups) {
+                if (core.endsWith(ethnic)) {
+                    core = core.slice(0, core.length - ethnic.length);
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        return core || null;
+    }
+
+    // 照抄 game.js 的强行修正（自治旗 / 各族自治县 / 易失败项）
+    const FORCE_CORE = {
+        '鄂温克族自治旗': '鄂温克',
+        '鄂伦春自治旗': '鄂伦春',
+        '莫力达瓦达斡尔族自治旗': '莫力达瓦',
+        '龙胜各族自治县': '龙胜',
+        '隆林各族自治县': '隆林',
+        '融水苗族自治县': '融水',
+        '长白朝鲜族自治县': '长白',
+        '陵水黎族自治县': '陵水',
+        '彭水苗族土家族自治县': '彭水',
+        '东乡族自治县': '东乡',
+        '神农架林区': '神农架',
+        '六枝特区': '六枝',
+        '大柴旦行政委员会': '大柴旦',
+        '香港特别行政区': '香港',
+        '澳门特别行政区': '澳门'
+    };
+
+    // 后缀剥离引擎（照抄 game.js 的思路）
+    function extractProper(fullName) {
+        // 去掉括号及其内容，比如 "市中区（济南市）" -> "市中区"
+        let name = fullName.replace(/（.*?）/g, '');
+
+        // 先查 game.js 里的强行修正
+        if (FORCE_CORE[name]) return FORCE_CORE[name];
+
+        // 自治州 / 自治县：照抄 getAutonomousCore
+        if (name.endsWith('自治州') || name.endsWith('自治县')) {
+            const core = getAutonomousCore(name);
+            if (core) return core;
+        }
+
+        // 普通通名（长尾缀优先，"矿区/新区/林区/特区/地区" 必须排在 "区" 之前）
+        const suffixes = ['特区', '林区', '矿区', '新区', '地区', '市', '区', '县', '旗', '盟'];
+        for (let suf of suffixes) {
+            if (name.endsWith(suf)) {
+                return name.slice(0, -suf.length);
+            }
+        }
+        return name;
+    }
+
+    // 加载数据：区县 + 地级市（看图猜区县的中等/困难模式匹配池）
+    function registerRecord(full, province, city) {
+        if (!full || NAME_MAP[full]) return;
+        const record = { full, province: province || '', city: city || '', proper: extractProper(full) };
+        DISTRICT_DB.push(record);
+        NAME_MAP[full] = record;
+        if (!PROPER_MAP[record.proper]) PROPER_MAP[record.proper] = [];
+        PROPER_MAP[record.proper].push(record);
+    }
+
+    if (typeof DISTRICT_INFO !== 'undefined' && Object.keys(DISTRICT_INFO).length > 0) {
+        // 仅加载区县，移除地级市
+        Object.keys(DISTRICT_INFO).forEach(full => {
+            const info = DISTRICT_INFO[full] || {};
+            registerRecord(full, info.province, info.city);
+        });
+
+        console.log('[城市合成] 已加载 ' + DISTRICT_DB.length + ' 个县级行政区（纯区县版，来自 district-info.js）');
+    } else {
+        RAW_STRUCTURED_DATA.trim().split('\n').forEach(line => {
+            if (!line) return;
+            const parts = line.split('|');
+            registerRecord(parts[0], parts[1], parts[2]);
+        });
+        console.warn('[城市合成] 未找到 district-info.js，使用内置精简数据（' + DISTRICT_DB.length + ' 条）');
+    }
+
+    // ==========================================
+    // 3. 游戏状态
+    // ==========================================
+    let lastAnswer = ''; 
+    let usedItems = []; 
+    let history = []; 
+
+    function updateUI() {
+        poolDisplay.textContent = lastAnswer || '空';
+        
+        usedListEl.innerHTML = '';
+        history.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'used-item';
+            if (index === history.length - 1) {
+                div.classList.add('active');
+            } else {
+                div.classList.add('result');
+            }
+            // 如果是自己接的，实时显示当前的昵称；如果是别人接的，显示当时的名字
+            let displayName = (item.senderId === myPlayerId) ? playerNameInput.value : (item.senderName || item.sender || '系统');
+            let senderTag = `<span style="color:#8b5cf6; font-size:12px; margin-right:6px;">[${displayName}]</span>`;
+            div.innerHTML = `<span>${index + 1}.</span> ${senderTag}${item.left} = ${item.right}`;
+            usedListEl.appendChild(div);
+        });
+        usedListEl.scrollTop = usedListEl.scrollHeight;
+    }
+
+    function addMessage(html, type = 'sys') {
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.innerHTML = html;
+        chatArea.appendChild(div);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // 解析用户输入的区县
+    function resolveInput(inputStr) {
+        // 1. 如果精确存在于全名库中
+        if (NAME_MAP[inputStr]) {
+            return { status: 'exact', records: [NAME_MAP[inputStr]] };
+        }
+        
+        // 2. 剥离专名去查
+        let proper = extractProper(inputStr);
+        if (PROPER_MAP[proper]) {
+            let records = PROPER_MAP[proper];
+            if (records.length === 1) {
+                return { status: 'exact', records: records };
+            } else {
+                return { status: 'ambiguous', records: records };
+            }
+        }
+        
+        return { status: 'none', records: [] };
+    }
+
+    function initGame(isHostCreate = false, isRestart = false) {
+        usedItems = [];
+        history = [];
+        chatArea.innerHTML = ''; // 本地清空聊天记录
+        
+        // 房主点击新游戏时，本地提示
+        if (isRestart && isHost) {
+            addMessage('👑 <b>房主开启了新游戏！</b>', 'sys');
+        }
+        inputEl.disabled = false;
+        submitBtn.disabled = false;
+        inputEl.placeholder = '必须包含当前需接区县...';
+        
+        let randomFull = '';
+        const customInput = document.getElementById('customStartInput');
+        const customVal = customInput ? customInput.value.trim() : '';
+        
+        if (customVal) {
+            // 用户指定了开局
+            let res = resolveInput(customVal);
+            if (res.status === 'exact' || res.status === 'partial' || res.status === 'ambiguous') {
+                randomFull = res.records[0].full; // 如果有重名默认取第一个
+            }
+        }
+        
+        if (!randomFull) {
+            // 如果没有指定或指定失败，走随机池
+            const keys = Object.keys(NAME_MAP);
+            let attempts = 0;
+            // 循环抽题，直到抽到一个有解的（不是开局死局），最多尝试 200 次防止死循环
+            do {
+                randomFull = keys[Math.floor(Math.random() * keys.length)];
+                attempts++;
+            } while (isGameOver(randomFull, [randomFull]) && attempts < 200);
+        }
+        
+        lastAnswer = randomFull;
+        usedItems.push(randomFull);
+
+        updateUI();
+
+        // 房主重开游戏时，广播给所有连接的玩家
+        if (peer && isHost && !isHostCreate) {
+            broadcastToAll({
+                type: 'sync_state',
+                state: { lastAnswer, usedItems, history, isRestart: isRestart }
+            });
+        }
+
+        addMessage(`
+            🎲 <b>新的一局开始！</b><br>
+            系统随机给出的初始地名是：<span style="color:#38bdf8;font-weight:bold;">${randomFull}</span><br>
+            💡 <b>接龙规则：</b>你的算式左边<strong>必须包含</strong>当前需接区县 <code>${randomFull}</code>。<br>
+            <span style="color:#ef4444;font-weight:bold;">注意：遇到重名区县会弹窗，用过的将永久消耗！</span>
+        `, 'sys');
+
+        inputEl.value = randomFull + ' ';
+        inputEl.focus();
+    }
+
+    // 弹窗选择逻辑
+    function showAmbiguityModal(token, candidates, onSelect) {
+        const modal = document.getElementById('ambiguityModal');
+        const optionsDiv = document.getElementById('ambiguityOptions');
+        const textEl = document.getElementById('ambiguityText');
+        
+        optionsDiv.innerHTML = '';
+        textEl.innerHTML = `系统中存在多个 <b>"${token}"</b>，请选择您要使用的具体区县：`;
+        
+        candidates.slice().sort((a, b) => {
+            const ka = (a.province || '') + '|' + (a.city || '');
+            const kb = (b.province || '') + '|' + (b.city || '');
+            return ka.localeCompare(kb, 'zh');
+        }).forEach(record => {
+            const btn = document.createElement('button');
+            btn.className = 'modal-btn';
+            const loc = record.city
+                ? `${record.province} · ${record.city}`
+                : (record.province || '');
+            btn.innerHTML = `<b>${record.full}</b> <span style="font-size:12px;color:#94a3b8;float:right;">${loc}</span>`;
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                // 执行传进来的回调，不再盲目替换字符串
+                onSelect(record.full);
+            };
+            optionsDiv.appendChild(btn);
+        });
+        
+        modal.style.display = 'flex';
+    }
+
+    // ===== 精准检测是否为死局（终结机制） =====
+    function isGameOver(currentAnswer, usedItems) {
+        let currentProper = extractProper(currentAnswer);
+        let availableMaterials = Object.keys(NAME_MAP).filter(n => !usedItems.includes(n));
+        let availableTargets = Object.keys(NAME_MAP).filter(n => !usedItems.includes(n) && n !== currentAnswer);
+        
+        if (availableMaterials.length === 0 || availableTargets.length === 0) return true;
+
+        // 遍历所有可能的目标
+        for (let targetName of availableTargets) {
+            let targetProper = extractProper(targetName);
+            
+            // 如果目标里完全没有当前需接区县的字，直接跳过（没法合成）
+            if (!targetProper.split('').some(c => currentProper.includes(c))) continue;
+            
+            // 遍历所有可用的材料，看能不能拼出来
+            for (let matName of availableMaterials) {
+                let matProper = extractProper(matName);
+                
+                // 1. 检查加法：当前需接区县 + 材料，能否覆盖目标
+                let addPool = [...currentProper.split(''), ...matProper.split('')];
+                let addVerify = [...addPool];
+                let canAdd = targetProper.split('').every(c => {
+                    let idx = addVerify.indexOf(c);
+                    if (idx > -1) { addVerify.splice(idx, 1); return true; }
+                    return false;
+                });
+                if (canAdd) return false; // 只要发现一条路，就不是死局
+                
+                // 2. 检查减法：当前需接区县 - 材料，能否覆盖目标
+                let subPool = [...currentProper.split('')];
+                matProper.split('').forEach(c => {
+                    let idx = subPool.indexOf(c);
+                    if (idx > -1) subPool.splice(idx, 1);
+                });
+                let subVerify = [...subPool];
+                let canSubTarget = targetProper.split('').every(c => {
+                    let idx = subVerify.indexOf(c);
+                    if (idx > -1) { subVerify.splice(idx, 1); return true; }
+                    return false;
+                });
+                if (canSubTarget) return false; // 只要发现一条路，就不是死局
+            }
+        }
+        return true; // 遍历完毕，找不到任何能合成的新词，判定为终结
+    }
+
+    // 玩家点击接龙或回车时的入口
+    function handleSubmit() {
+        let input = inputEl.value.trim();
+        if (!input) return;
+        
+        // 1. 联机模式下，如果没有等号，当做日常聊天处理（不报格式错误）
+        if (peer && !input.includes('=')) {
+            inputEl.value = ''; // 清空输入框
+            
+            if (isHost) {
+                // 房主发聊天：本地渲染 + 广播（名字统一黑色）
+                let chatHtml = `<span style="color:#000000; font-size:12px; margin-right:6px;">[${playerNameInput.value}]</span> ${input}`;
+                addMessage(chatHtml, 'user');
+                broadcastToAll({ type: 'chat', text: input, senderId: myPlayerId, senderName: playerNameInput.value });
+            } else {
+                // 玩家发聊天：发送给房主
+                if (hostConn && hostConn.open) {
+                    hostConn.send({ type: 'chat', text: input, senderId: myPlayerId, senderName: playerNameInput.value });
+                }
+            }
+            return;
+        }
+        
+        // 2. 联机模式且包含等号 -> 当作算式，转发给房主
+        if (peer && !isHost) {
+            if (hostConn && hostConn.open) {
+                hostConn.send({ 
+                    type: 'submit', 
+                    input: input, 
+                    senderId: myPlayerId, 
+                    senderName: playerNameInput.value 
+                });
+                inputEl.value = ''; // 清空输入框，防止连点
+            } else {
+                addMessage('❌ 与房主断开连接，无法提交。', 'error');
+            }
+            return;
+        }
+
+        // 3. 单机模式（没有等号会走到这里面触发格式错误）或 房主直接提交算式
+        executeSubmitLogic(input, myPlayerId, playerNameInput.value, null);
+    }
+
+    // 核心判定逻辑（单机、房主、房主代玩家判定 都走这里）
+    function executeSubmitLogic(input, senderId, senderName, hostReplyConn) {
+        let rawInput = input;
+        input = input.replace(/\s+/g, '').replace(/＋/g, '+').replace(/－/g, '-');
+        
+        function reply(resultHtml, isSuccess, isOver = false) {
+            // 判断是不是自己发的
+            let isMe = (senderId === myPlayerId);
+            
+            // 统一生成带昵称的聊天HTML（名字统一黑色）
+            let chatHtml = `<span style="color:#000000; font-size:12px; margin-right:6px;">[${senderName}]</span> ${rawInput}`;
+            
+            // 单机或房主本地渲染
+            if (isHost || (!peer && !isHost)) {
+                // 如果是自己发的，右侧蓝色；如果是别人发的（房主代审），左侧灰色
+                addMessage(chatHtml, isMe ? 'user' : 'user other');
+                addMessage(resultHtml, isSuccess ? 'success' : 'error');
+                
+                if (isOver) {
+                    inputEl.disabled = true;
+                    submitBtn.disabled = true;
+                    inputEl.placeholder = '游戏已终结，点击下方开启新游戏';
+                } else {
+                    if (isSuccess) {
+                        inputEl.value = lastAnswer + ' '; // 只有成功才自动填入下个词
+                    }
+                    inputEl.focus();
+                }
+                
+                // 如果是在联机房间里的房主，把刚才的聊天和状态广播给所有人
+                if (isHost) {
+                    broadcastToAll({
+                        type: 'sync_chat_and_state',
+                        chatHtml: chatHtml,
+                        senderId: senderId,
+                        resultHtml: resultHtml,
+                        isSuccess: isSuccess,
+                        isOver: isOver,
+                        state: { lastAnswer, usedItems, history }
+                    });
+                }
+            }
+        }
+
+        if (!input.includes('=')) {
+            return reply('❌ 格式错误：请用 "=" 连接算式和结果。', false);
+        }
+
+        let [left, right] = input.split('=');
+
+        if (left.includes('+') && left.includes('-')) {
+            return reply('❌ 失败：算式不能混用加减法！只能全部用加法，或全部用减法。', false);
+        }
+
+        let tokens = left.split(/([+-])/);
+        let ambiguityFound = false;
+        let invalidToken = null;
+
+        for (let i = 0; i < tokens.length; i++) {
+            let token = tokens[i].trim();
+            if (token === '+' || token === '-') continue;
+
+            let res = resolveInput(token);
+            if (res.status === 'ambiguous') {
+                if (hostReplyConn) {
+                    // 房主代玩家判定，通知玩家弹窗
+                    hostReplyConn.send({ 
+                        type: 'need_ambiguity', 
+                        token: token, 
+                        records: res.records, 
+                        isRight: false,
+                        originalLeft: left,
+                        originalRight: right
+                    });
+                } else {
+                    // 本地弹窗
+                    showAmbiguityModal(token, res.records, function(selectedFull) {
+                        tokens[i] = selectedFull;
+                        let newLeft = tokens.join('');
+                        let newInput = newLeft + '=' + right;
+                        executeSubmitLogic(newInput, senderId, senderName, hostReplyConn); 
+                    });
+                }
+                ambiguityFound = true;
+                break;
+            }
+            if (res.status === 'none') {
+                invalidToken = token;
+                break;
+            }
+        }
+
+        if (ambiguityFound) return;
+        if (invalidToken) {
+            return reply(`❌ 失败：材料 <b>"${invalidToken}"</b> 不存在于地名库中！`, false);
+        }
+
+        let resRight = resolveInput(right);
+        if (resRight.status === 'ambiguous') {
+            if (hostReplyConn) {
+                // 房主代玩家判定，通知玩家弹窗
+                hostReplyConn.send({ 
+                    type: 'need_ambiguity', 
+                    token: right, 
+                    records: resRight.records, 
+                    isRight: true,
+                    originalLeft: left,
+                    originalRight: right
+                });
+            } else {
+                // 本地弹窗
+                showAmbiguityModal(right, resRight.records, function(selectedFull) {
+                    let newInput = left + '=' + selectedFull;
+                    executeSubmitLogic(newInput, senderId, senderName, hostReplyConn); 
+                });
+            }
+            return;
+        }
+        if (resRight.status === 'none') {
+            return reply(`❌ 失败：合成结果 <b>"${right}"</b> 不存在于地名库中！`, false);
+        }
+
+        let matchedRight = resRight.records[0].full;
+        let targetProper = resRight.records[0].proper;
+
+        if (usedItems.includes(matchedRight)) {
+            return reply(`❌ 失败：<b>"${matchedRight}"</b> 已经被合成过了，不能重复使用！`, false);
+        }
+
+        let currentSign = 1;
+        let newPool = [];
+        let hasLastAnswer = false;
+        let newMaterials = [];
+
+        for (let i = 0; i < tokens.length; i++) {
+            let token = tokens[i].trim();
+            if (token === '+') currentSign = 1;
+            else if (token === '-') currentSign = -1;
+            else if (token) {
+                let res = resolveInput(token);
+                let materialRecord = res.records[0];
+                let materialFull = materialRecord.full;
+                
+                let isLast = false;
+                if (materialFull === lastAnswer) {
+                    isLast = true;
+                } else if (materialRecord.proper === extractProper(lastAnswer)) {
+                    if (materialFull.includes('（') || lastAnswer.includes('（')) {
+                        isLast = false;
+                    } else {
+                        isLast = true;
+                    }
+                }
+                
+                if (isLast) {
+                    hasLastAnswer = true;
+                } else {
+                    if (usedItems.includes(materialFull)) {
+                        return reply(`❌ 失败：材料 <b>"${materialFull}"</b> 在前面的轮次中已经被消耗过了。`, false);
+                    }
+                    if (!newMaterials.includes(materialFull)) {
+                        newMaterials.push(materialFull);
+                    }
+                }
+
+                let proper = materialRecord.proper;
+                let tokenChars = proper.split('');
+
+                if (currentSign === 1) {
+                    tokenChars.forEach(ch => newPool.push({ char: ch, source: proper }));
+                } else {
+                    let subCount = 0;
+                    tokenChars.forEach(ch => {
+                        if (subCount >= 1) return;
+                        let idx = newPool.findIndex(item => item.char === ch);
+                        if (idx > -1) {
+                            newPool.splice(idx, 1);
+                            subCount++;
+                        }
+                    });
+                }
+            }
+        }
+
+        if (!hasLastAnswer) {
+            return reply(`❌ 接龙失败：算式左边必须包含当前需接区县 <b>"${lastAnswer}"</b>！`, false);
+        }
+
+        if (newMaterials.includes(matchedRight)) {
+            return reply(`❌ 失败：合成结果 <b>"${matchedRight}"</b> 不能是本轮刚加进去的材料！`, false);
+        }
+
+        let isSuccess = true;
+        let missing = [];
+        let verifyPool = [...newPool];
+        let usedSources = new Set();
+        let greedyOk = true;
+        let errorMsg = '';
+
+        // 1. 贪心试探（用于生成直观的报错）
+        for (let ch of targetProper.split('')) {
+            let idx = verifyPool.findIndex(item => item.char === ch && item.source === undefined);
+            if (idx === -1) idx = verifyPool.findIndex(item => item.char === ch && !usedSources.has(item.source));
+            
+            if (idx === -1) {
+                let conflictIdx = verifyPool.findIndex(item => item.char === ch);
+                if (conflictIdx > -1) {
+                    let source = verifyPool[conflictIdx].source;
+                    errorMsg = `❌ 失败：每个地名只能取一个字！不能从 "${source}" 中连续取字。`;
+                } else {
+                    errorMsg = `❌ 失败：字池里缺少 <b>"${ch}"</b>，无法合成 "${targetProper}"。`;
+                }
+                greedyOk = false;
+                break;
+            }
+            
+            let item = verifyPool[idx];
+            if (item.source !== undefined) usedSources.add(item.source);
+            verifyPool.splice(idx, 1);
+        }
+
+        if (greedyOk) {
+            isSuccess = true;
+        } else {
+            // 2. 贪心失败，尝试回溯找其他分配方式（解决顺序引起的误判）
+            function backtrack(targetStr, pool, used) {
+                if (targetStr.length === 0) return true;
+                let ch = targetStr[0];
+                let rest = targetStr.slice(1);
+                
+                for (let i = 0; i < pool.length; i++) {
+                    let item = pool[i];
+                    if (item.char === ch) {
+                        if (item.source === undefined) {
+                            if (backtrack(rest, pool.slice(0, i).concat(pool.slice(i+1)), used)) return true;
+                        } else if (!used.has(item.source)) {
+                            used.add(item.source);
+                            if (backtrack(rest, pool.slice(0, i).concat(pool.slice(i+1)), used)) return true;
+                            used.delete(item.source);
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            if (backtrack(targetProper, newPool, new Set())) {
+                isSuccess = true;
+            } else {
+                // 3. 回溯也失败，抛出贪心阶段的错误
+                return reply(errorMsg, false);
+            }
+        }
+
+        usedItems.push(...newMaterials);
+        usedItems.push(matchedRight);
+        lastAnswer = matchedRight;
+        
+        let displayLeft = '';
+        for (let i = 0; i < tokens.length; i++) {
+            let t = tokens[i].trim();
+            if (t === '+' || t === '-') displayLeft += t;
+            else if (t) {
+                let parsed = resolveInput(t);
+                displayLeft += (parsed.records && parsed.records.length > 0) ? parsed.records[0].full : t;
+            }
+        }
+        history.push({ left: displayLeft, right: matchedRight, senderId: senderId, senderName: senderName });
+        updateUI();
+
+        let isOver = isGameOver(lastAnswer, usedItems);
+        let resultHtml = `✅ 接龙成功！当前需接区县为 <b>"${matchedRight}"</b>。`;
+        if (isOver) resultHtml += `<br>🏁 <b>游戏终结！</b>无法再拼出任何未使用的区县。`;
+        
+        reply(resultHtml, true, isOver);
+    }
+
+    restartBtn.addEventListener('click', () => {
+        // 联机模式下，只有房主能点
+        if (peer && !isHost) {
+            alert('只有房主可以开启新游戏！');
+            return;
+        }
+        
+        // 单机模式或房主点击，执行重置
+        initGame(false, true);
+    });
+
+    submitBtn.addEventListener('click', handleSubmit);
+    inputEl.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleSubmit();
+    });
+
+    // 监听昵称修改，在输入完成（失去焦点或回车）时刷新并同步
+    playerNameInput.addEventListener('change', () => {
+        updateUI();
+        
+        // 如果是联机模式
+        if (peer) {
+            if (isHost) {
+                // 房主改名：更新列表并发广播
+                roomPlayers['host'] = playerNameInput.value;
+                updateRoomPlayers();
+                
+                addMessage(`📝 你将昵称更改为 <b>${playerNameInput.value}</b>`, 'sys');
+                broadcastToAll({ type: 'system_msg', msg: `📝 房主将昵称更改为 <b>${playerNameInput.value}</b>` });
+            } else {
+                // 玩家改名：通知房主
+                if (hostConn && hostConn.open) {
+                    hostConn.send({ 
+                        type: 'change_name', 
+                        newName: playerNameInput.value 
+                    });
+                }
+            }
+        }
+    });
+
+    // 启动
+    initGame();
+</script>
+</body>
+</html>

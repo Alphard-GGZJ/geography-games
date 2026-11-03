@@ -1,0 +1,5412 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼音开字母 · 水平展示</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #eef5f9;
+            min-height: 100vh;
+            padding: 24px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .app {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 48px;
+            padding: 28px 24px 32px;
+            box-shadow: 0 16px 40px rgba(0,20,30,0.15);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        h1 {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 2.0rem;
+            font-weight: 600;
+            color: #1a3b4d;
+            border-bottom: 2px dashed #b6d2e0;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        h1 small {
+            font-size: 1rem;
+            font-weight: 400;
+            background: #dbeaf3;
+            padding: 4px 20px;
+            border-radius: 40px;
+            color: #1f4b5e;
+        }
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px 24px;
+            background: #d7e6ef70;
+            padding: 16px 24px;
+            border-radius: 60px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(2px);
+        }
+        .top-bar label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: #1f4459;
+        }
+        .top-bar input[type="number"] {
+            width: 80px;
+            padding: 8px 6px;
+            border-radius: 40px;
+            border: 1px solid #b8cfdc;
+            background: white;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .top-bar button {
+            background: #2b5d77;
+            border: none;
+            color: white;
+            padding: 8px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 0 #15323f, 0 4px 12px rgba(0,20,30,0.2);
+            cursor: pointer;
+            transition: 0.06s linear;
+            border: 1px solid #5f8ba3;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .top-bar button:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #15323f;
+        }
+        .top-bar button.secondary {
+            background: #628a9e;
+            box-shadow: 0 5px 0 #3a5b6b;
+        }
+        .top-bar button.danger {
+            background: #b14545;
+            box-shadow: 0 5px 0 #6f2a2a;
+            border-color: #c96a6a;
+        }
+        .top-bar button.success {
+            background: #3a8a5a;
+            box-shadow: 0 5px 0 #1f5a3a;
+            border-color: #5aad7a;
+        }
+        .import-area {
+            background: #eef5f9;
+            border-radius: 40px;
+            padding: 12px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            border: 1px dashed #7fa3b7;
+        }
+        .import-area label {
+            font-weight: 500;
+            color: #1a3b4d;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1 1 200px;
+        }
+        .import-area input[type="file"] {
+            font-size: 0.85rem;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            border: 1px solid #bfd7e4;
+            flex: 1 1 180px;
+        }
+        .file-status {
+            background: #d2e3ed;
+            padding: 4px 18px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #1f4b5e;
+        }
+        .region-label {
+            background: #c0d9e8;
+            padding: 4px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #0d3142;
+            font-weight: 600;
+        }
+        .global-letters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 10px;
+            background: #dce8f0;
+            padding: 14px 12px;
+            border-radius: 60px;
+            margin: 14px 0 22px;
+            border: 1px solid #b8cfdc;
+        }
+        .global-letter {
+            width: 46px;
+            height: 46px;
+            border-radius: 30px;
+            background: #dae8f1;
+            border: 1px solid #b1ccdd;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #15323f;
+            box-shadow: 0 4px 0 #889faf;
+            cursor: pointer;
+            transition: all 0.04s linear;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            user-select: none;
+        }
+        .global-letter:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #6a8393;
+        }
+        .global-letter.active {
+            background: #c0d9e8;
+            border-color: #7fa3b7;
+            box-shadow: 0 2px 0 #5f7b8b;
+            transform: translateY(2px);
+        }
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 18px 0 28px;
+        }
+        .question-row {
+            background: white;
+            border-radius: 24px;
+            padding: 14px 20px;
+            box-shadow: 0 4px 12px rgba(0,20,30,0.05);
+            border: 1px solid #d4e3ed;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 20px;
+            transition: all 0.1s;
+        }
+        .question-row.correct {
+            background: #eaf7ef;
+            border-color: #8bc4a0;
+        }
+        .question-row .index-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6a8a9a;
+            min-width: 28px;
+            text-align: center;
+        }
+        .pinyin-horizontal {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 12px;
+            background: #eef5fa;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #c7dbe7;
+            min-height: 48px;
+            flex: 1 1 200px;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: #08212e;
+        }
+        .pinyin-horizontal .char {
+            display: inline-block;
+            min-width: 28px;
+            text-align: center;
+            padding: 2px 2px;
+            border-radius: 4px;
+            transition: 0.08s;
+        }
+        .pinyin-horizontal .char.revealed {
+            background: #c0d9e8;
+            color: #0a2b3b;
+        }
+        .pinyin-horizontal .char.hidden {
+            color: #b0c8d6;
+            background: #eaf1f6;
+        }
+        .pinyin-horizontal .char.correct-reveal {
+            background: #8bc4a0;
+            color: #0a2b3b;
+        }
+        .pinyin-horizontal .space-char {
+            display: inline-block;
+            min-width: 12px;
+        }
+        .question-row .answer-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex: 0 1 auto;
+        }
+        .question-row .answer-section input {
+            padding: 8px 14px;
+            border-radius: 40px;
+            border: 1px solid #b8d0dd;
+            font-size: 0.95rem;
+            background: white;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.02);
+            width: 140px;
+        }
+        .question-row .answer-section input:disabled {
+            background: #f0f5f8;
+            color: #2a5b72;
+        }
+        .question-row .answer-section button {
+            background: #2f6d7e;
+            border: none;
+            color: white;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 0 #1a4350;
+            cursor: pointer;
+            transition: 0.05s linear;
+            border: 1px solid #5a8ca0;
+            white-space: nowrap;
+        }
+        .question-row .answer-section button:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #1a4350;
+        }
+        .question-row .answer-section button:disabled {
+            opacity: 0.5;
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #1a4350;
+            cursor: not-allowed;
+        }
+        .question-row .status-badge {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 4px 16px;
+            border-radius: 30px;
+            background: #eaf1f6;
+            color: #1f4b5e;
+            white-space: nowrap;
+            min-width: 70px;
+            text-align: center;
+        }
+        .badge-correct { background: #9ed0b0; color: #1a4f2e; }
+        .badge-wrong { background: #f7c5c5; color: #8f3a3a; }
+        .badge-answer { background: #d4e3ed; color: #1f4459; }
+        .timer-box {
+            background: #1f4459;
+            color: white;
+            padding: 6px 24px;
+            border-radius: 60px;
+            font-family: monospace;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+            display: inline-block;
+            cursor: pointer;
+            user-select: none;
+            transition: 0.1s;
+        }
+        .timer-box:hover {
+            opacity: 0.85;
+        }
+        .timer-box.paused {
+            background: #5a7a8a;
+        }
+        .footer-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            gap: 16px;
+            background: #ddecf5;
+            border-radius: 60px;
+            padding: 10px 24px;
+        }
+        .message-area {
+            font-size: 0.95rem;
+            background: #d2e3ed;
+            padding: 4px 24px;
+            border-radius: 40px;
+            color: #1f4b5e;
+        }
+        .reset-all-btn {
+            background: #48778e;
+            border: none;
+            color: white;
+            padding: 6px 22px;
+            border-radius: 60px;
+            font-weight: 600;
+            box-shadow: 0 4px 0 #2c5366;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .reset-all-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2c5366;
+        }
+        .answer-display {
+            font-size: 0.95rem;
+            color: #1a4f6e;
+            background: #e6f0f7;
+            padding: 2px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .answer-display.correct-answer {
+            background: #8bc4a0;
+            color: #0a3b1e;
+        }
+        .time-display {
+            font-size: 0.75rem;
+            color: #4a6a7a;
+            background: #eaf1f6;
+            padding: 2px 12px;
+            border-radius: 16px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .summary-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 24px;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .summary-panel {
+            background: white;
+            border-radius: 48px;
+            max-width: 720px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 32px 36px 36px;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .summary-panel h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a3b4d;
+            text-align: center;
+            border-bottom: 2px solid #dce8f0;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 24px;
+            background: #f0f6fa;
+            border-radius: 28px;
+            padding: 18px 24px;
+            margin-bottom: 22px;
+        }
+        .summary-stats .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .summary-stats .stat-item .label {
+            font-size: 0.9rem;
+            color: #3a6379;
+        }
+        .summary-stats .stat-item .value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #0d3142;
+        }
+        .summary-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .summary-detail-table th {
+            text-align: left;
+            padding: 8px 8px 8px 0;
+            font-weight: 600;
+            color: #1f4459;
+            border-bottom: 1px solid #d4e3ed;
+        }
+        .summary-detail-table td {
+            padding: 6px 8px 6px 0;
+            border-bottom: 1px solid #eaf1f6;
+            color: #1a3b4d;
+        }
+        .summary-detail-table .correct-row td {
+            color: #1a4f2e;
+        }
+        .summary-detail-table .wrong-row td {
+            color: #8f3a3a;
+        }
+        .summary-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        .summary-buttons button {
+            padding: 10px 32px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: 0.06s linear;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+        }
+        .summary-buttons button:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+        }
+        .summary-buttons .btn-primary {
+            background: #2b5d77;
+            color: white;
+        }
+        .summary-buttons .btn-secondary {
+            background: #d4e3ed;
+            color: #1f4459;
+        }
+        .summary-buttons .btn-success {
+            background: #3a8a5a;
+            color: white;
+        }
+        .summary-close {
+            margin-top: 16px;
+            text-align: center;
+        }
+        .summary-close button {
+            background: transparent;
+            border: 1px solid #b8d0dd;
+            padding: 6px 28px;
+            border-radius: 40px;
+            color: #3a6379;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .summary-close button:hover {
+            background: #eaf1f6;
+        }
+
+        @media (max-width: 650px) {
+            .app { padding: 16px; }
+            .question-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .pinyin-horizontal { font-size: 1.2rem; gap: 4px 8px; }
+            .pinyin-horizontal .char { min-width: 22px; }
+            .question-row .answer-section { justify-content: center; }
+            .question-row .answer-section input { width: 100%; }
+            .summary-panel { padding: 24px 20px; }
+            .summary-stats { grid-template-columns: 1fr; }
+            .summary-buttons button { flex: 1; min-width: 120px; }
+        }
+        /* ===== 新增：开字母主界面样式 ===== */
+        #openLetterHome {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;
+        }
+        #openLetterHome h1 { border: none; padding: 0; margin: 0; font-size: 3rem; color: #2b4c8c; text-shadow: 0 2px 10px rgba(74,108,247,0.2); display: flex; align-items: center; gap: 15px; }
+        #openLetterHome p { color: #5b6b82; font-size: 1.1rem; letter-spacing: 1px; margin-bottom: 20px; }
+        .home-menu { display: flex; flex-direction: column; gap: 15px; width: 320px; }
+        .home-menu button { padding: 18px; border-radius: 16px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .home-menu button.btn-play { background: #2b5d77; color: white; box-shadow: 0 6px 15px rgba(43,93,119,0.3); }
+        .home-menu button.btn-play:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(43,93,119,0.4); }
+        .home-menu button.btn-disabled { background: #e0e0e0; color: #888; cursor: not-allowed; }
+                /* ===== 好友对决面板样式 ===== */
+        #battleScreen { position: fixed; inset: 0; z-index: 9999; background: #f3f4f6; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .battle-container { max-width: 1000px; margin: 0 auto; width: 100%; display: flex; gap: 20px; }
+        .battle-main { flex: 1; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-height: 80vh; }
+        .battle-side { width: 300px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .battle-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .battle-players { display: flex; flex-wrap: wrap; gap: 10px; background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
+        .player-tag { background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+        .player-tag { display: inline-flex; align-items: center; gap: 6px; }
+        .player-tag button { padding: 2px 6px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; }
+        .btn-mute { background: #f59e0b; }
+        .btn-kick { background: #ef4444; }
+
+        .battle-questions { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
+        .bq-item { background: #f3f4f6; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 20px; font-weight: bold; }
+        .bq-item.correct { background: #dcfce7; color: #166534; text-decoration: line-through; }
+        
+        .battle-chat-box { background: white; border-radius: 12px; display: flex; flex-direction: column; height: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+        .chat-msg { word-break: break-all; }
+        .chat-msg.system { color: #ef4444; font-weight: bold; text-align: center; }
+        .chat-msg.correct { color: #10b981; font-weight: bold; }
+        .chat-input-area { display: flex; padding: 10px; border-top: 1px solid #eee; gap: 8px; }
+        .chat-input-area input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; outline: none; }
+        .chat-input-area button { padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .battle-controls { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    </style>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<!-- 新增的开字母主界面 -->
+<div id="openLetterHome" style="position: fixed; inset: 0; z-index: 9999; background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+    <h1 style="border: none; padding: 0; margin: 0; font-size: 3rem; color: #2b4c8c; text-shadow: 0 2px 10px rgba(74,108,247,0.2); display: flex; align-items: center; gap: 15px;">🔤 开字母猜地名</h1>
+    <p style="color: #5b6b82; font-size: 1.1rem; letter-spacing: 1px; margin-bottom: 20px;">逐字母揭示，考验地名储备</p>
+    <div style="display: flex; flex-direction: column; gap: 15px; width: 320px;">
+        <button id="btnSinglePlayer" style="padding: 18px; border-radius: 16px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #2b5d77; color: white; box-shadow: 0 6px 15px rgba(43,93,119,0.3);">🎮 单机练习模式</button>
+                <button id="btnHostScreen" style="padding: 18px; border-radius: 16px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #628a9e; color: white; box-shadow: 0 6px 15px rgba(98,138,158,0.3);">🎤 主持人大屏</button>
+        <button id="btnBattleMode" style="padding: 18px; border-radius: 16px; border: none; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; background: #4f46e5; color: white; box-shadow: 0 6px 15px rgba(79,70,229,0.3);">⚔️ 好友对决</button>
+    </div>
+</div>
+
+<!-- 好友对决模式 -->
+<div id="battleScreen">
+    <!-- 大厅 -->
+    <div id="battleLobby" style="max-width: 400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <h2 style="text-align: center; margin-bottom: 20px; color: #2b4c8c;">⚔️ 好友对决</h2>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">你的昵称</label>
+            <input type="text" id="battleNameInput" placeholder="输入昵称" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+        <button id="btnCreateRoom" style="width: 100%; padding: 12px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer;">🏠 创建房间 (当裁判)</button>
+        
+        <div style="text-align: center; margin-bottom: 15px; color: #999;">— 或 —</div>
+        
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="battleRoomInput" placeholder="输入6位房间号" maxlength="6" style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; text-transform: uppercase;">
+            <button id="btnJoinRoom" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🚪 加入</button>
+        </div>
+        <button id="btnExitLobby" style="width: 100%; padding: 10px; background: #eee; color: #333; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer;">退出</button>
+    </div>
+
+    <!-- 房间内部 -->
+    <div id="battleRoomArea" style="display: none; max-width: 1000px; margin: 0 auto; width: 100%;">
+        <div class="battle-container">
+            <!-- 主区：题目和操作 -->
+            <div class="battle-main">
+                <div class="battle-header">
+                    <div>
+                        <span style="font-weight: bold; color: #4f46e5;">房间号: <span id="battleRoomIdDisplay"></span></span>
+                        <button id="btnCopyRoomId" style="margin-left: 10px; padding: 4px 10px; font-size: 12px; background: #e0e7ff; color: #4f46e5; border: 1px solid #c7d2fe; border-radius: 4px; cursor: pointer; font-weight: bold;">📋 复制</button>
+                                                <span id="battleRoleDisplay" style="margin-left: 10px; font-size: 12px; background: #fef08a; padding: 2px 8px; border-radius: 10px;">裁判</span>
+                        <span id="battleTimerDisplay" style="margin-left: 15px; font-weight: bold; color: #ef4444; font-family: monospace; font-size: 16px; display: none;">⏱ 00:00</span>
+                    </div>
+                    <button id="btnLeaveRoom" style="background: #ef4444; color: white; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">退出房间</button>
+                </div>
+                
+                <div style="font-size: 13px; color: #666; margin-bottom: 5px; font-weight: bold;">👥 房间内玩家：</div>
+                <div class="battle-players" id="battlePlayersList"></div>
+
+                <div class="battle-questions" id="battleQuestionsList"></div>
+
+                <!-- 裁判专属操作 -->
+                <div id="hostControls" style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; display: none;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <button id="btnGlobalMute" style="background: #f59e0b; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; height: 36px;">全体禁言</button>
+                        <select id="hostBankSelect" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; height: 36px;">
+                            <option value="random">随机生成题库</option>
+                            <option value="manual">手动输入题库</option>
+                        </select>
+                                                <span id="hostQuestionCountWrapper">
+                            <input type="number" id="hostQuestionCount" value="6" min="1" max="50" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 70px; height: 36px;" title="设置出题数量">
+                        </span>
+                        <button id="btnStartBattle" style="background: #10b981; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; height: 36px;">▶ 开始游戏</button>
+                    </div>
+                    <textarea id="hostManualBank" placeholder="每行输入一个地名即可，无需拼音&#10;例如：&#10;北京&#10;上海&#10;广州"  style="width: 100%; height: 80px; display: none; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace;"></textarea>
+                </div>
+            </div>
+
+            <!-- 侧区：聊天和操作 -->
+            <div class="battle-side">
+                <div style="font-size: 18px; color: #666; margin-bottom: 5px; font-weight: bold;">💬 答题 / 聊天区：</div>
+                <div class="battle-chat-box">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="输入地名或 开字母:A" autocomplete="off">
+                        <button id="btnSendChat">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- 结算弹窗 -->
+    <div id="battleResultModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <h2 style="color: #4f46e5; margin-bottom: 20px;">🏆 游戏结算</h2>
+            <div id="battleResultList" style="margin-bottom: 25px; text-align: left; padding: 0 20px; font-size: 16px; line-height: 2;"></div>
+            <button id="btnPlayAgain" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">🔄 再来一局</button>
+            <button id="btnLeaveAfterResult" style="width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">🚪 离开房间</button>
+            <div id="waitHostText" style="margin-top: 15px; font-size: 13px; color: #888; display: none;">或等待房主开始新的一局游戏...</div>
+        </div>
+    </div>
+
+<!-- 主持人大屏模式 -->
+<div id="hostScreen" style="display: none; position: fixed; inset: 0; z-index: 9998; background: #f3f4f6;">
+    <iframe id="hostIframe" src="about:blank" style="width: 100%; height: 100%; border: none;"></iframe>
+    <button id="btnExitHost" style="position: fixed; top: 15px; right: 15px; z-index: 10000; padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">✕ 退出大屏</button>
+</div>
+
+<!-- 原有的游戏界面，默认隐藏 -->
+<div class="app" id="app" style="display: none;">
+    <h1>
+        🧩 拼音开字母 · 水平展示
+        <small>题库嵌入版</small>
+    </h1>
+
+    <div class="import-area">
+        <label>
+            📂 题库文件（可选）
+            <input type="file" id="fileInput" accept=".csv,.txt">
+        </label>
+        <span class="file-status" id="fileStatus">已嵌入题库</span>
+        <span class="region-label" id="regionLabel">📍 当前地区：全国</span>
+        <button class="secondary" id="loadDefaultBtn">📋 恢复默认</button>
+        <button class="secondary" id="autoLoadBtn">🔄 重新导入</button>
+    </div>
+
+    <div class="top-bar">
+        <label>📌 出题数 <input type="number" id="questionCount" value="6" min="1" max="30"></label>
+        <button id="restartBtn" class="success">🔁 再来一局</button>
+        <button id="resetRevealBtn" class="secondary">🔄 重置字母</button>
+        <button id="homeBtn" class="secondary" style="background: #557c93;">🏠 主界面</button>
+        <button id="quitBtn" class="danger">🚪 放弃</button>
+        <span class="timer-box" id="timerDisplay">00:00</span>
+    </div>
+
+    <div class="global-letters" id="globalLetters"></div>
+
+    <div id="questionsContainer" class="questions-list"></div>
+
+    <div class="footer-bar">
+        <span class="message-area" id="gameMessage">💡 点击「再来一局」开始</span>
+        <button class="reset-all-btn" id="resetAllBtn">🔄 重置全部</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ============================================================
+        // 方式二：地区标签 + 题库数据（推荐）
+        // 第一行是地区名称，后面是地名数据
+        // 格式：地名,拼音（拼音用空格分隔音节）
+        // ============================================================
+        const DEFAULT_DB_TEXT = `全国
+北京,bei jing
+东城,dong cheng
+西城,xi cheng
+朝阳,chao yang
+丰台,feng tai
+石景山,shi jing shan
+海淀,hai dian
+门头沟,men tou gou
+房山,fang shan
+通州,tong zhou
+顺义,shun yi
+昌平,chang ping
+大兴,da xing
+怀柔,huai rou
+平谷,ping gu
+密云,mi yun
+延庆,yan qing
+天津,tian jin
+和平,he ping
+河东,he dong
+河西,he xi
+南开,nan kai
+河北,he bei
+红桥,hong qiao
+东丽,dong li
+西青,xi qing
+津南,jin nan
+北辰,bei chen
+武清,wu qing
+宝坻,bao di
+滨海新,bin hai xin
+宁河,ning he
+静海,jing hai
+蓟州,ji zhou
+河北,he bei
+石家庄,shi jia zhuang
+唐山,tang shan
+秦皇岛,qin huang dao
+邯郸,han dan
+邢台,xing tai
+保定,bao ding
+张家口,zhang jia kou
+承德,cheng de
+沧州,cang zhou
+廊坊,lang fang
+衡水,heng shui
+长安,chang an
+桥西,qiao xi
+新华,xin hua
+井陉矿,jing xing kuang
+裕华,yu hua
+藁城,gao cheng
+鹿泉,lu quan
+栾城,luan cheng
+井陉,jing xing
+正定,zheng ding
+行唐,xing tang
+灵寿,ling shou
+高邑,gao yi
+深泽,shen ze
+赞皇,zan huang
+无极,wu ji
+平山,ping shan
+元氏,yuan shi
+赵,zhao
+辛集,xin ji
+晋州,jin zhou
+新乐,xin le
+路南,lu nan
+路北,lu bei
+古冶,gu ye
+开平,kai ping
+丰南,feng nan
+丰润,feng run
+曹妃甸,cao fei dian
+滦南,luan nan
+乐亭,lao ting
+迁西,qian xi
+玉田,yu tian
+遵化,zun hua
+迁安,qian an
+滦州,luan zhou
+海港,hai gang
+山海关,shan hai guan
+北戴河,bei dai he
+抚宁,fu ning
+青龙,qing long
+昌黎,chang li
+卢龙,lu long
+邯山,han shan
+丛台,cong tai
+复兴,fu xing
+峰峰矿,feng feng kuang
+肥乡,fei xiang
+永年,yong nian
+临漳,lin zhang
+成安,cheng an
+大名,da ming
+涉,she
+磁,ci
+邱,qiu
+鸡泽,ji ze
+广平,guang ping
+馆陶,guan tao
+魏,wei
+曲周,qu zhou
+武安,wu an
+襄都,xiang du
+信都,xin du
+任泽,ren ze
+南和,nan he
+临城,lin cheng
+内丘,nei qiu
+柏乡,bai xiang
+隆尧,long yao
+宁晋,ning jin
+巨鹿,ju lu
+新河,xin he
+广宗,guang zong
+平乡,ping xiang
+威,wei
+清河,qing he
+临西,lin xi
+南宫,nan gong
+沙河,sha he
+竞秀,jing xiu
+莲池,lian chi
+满城,man cheng
+清苑,qing yuan
+徐水,xu shui
+涞水,lai shui
+阜平,fu ping
+定兴,ding xing
+唐,tang
+高阳,gao yang
+容城,rong cheng
+涞源,lai yuan
+望都,wang du
+安新,an xin
+易,yi
+曲阳,qu yang
+蠡,li
+顺平,shun ping
+博野,bo ye
+雄,xiong
+涿州,zhuo zhou
+定州,ding zhou
+安国,an guo
+高碑店,gao bei dian
+桥东,qiao dong
+桥西,qiao xi
+宣化,xuan hua
+下花园,xia hua yuan
+万全,wan quan
+崇礼,chong li
+张北,zhang bei
+康保,kang bao
+沽源,gu yuan
+尚义,shang yi
+蔚,yu
+阳原,yang yuan
+怀安,huai an
+怀来,huai lai
+涿鹿,zhuo lu
+赤城,chi cheng
+双桥,shuang qiao
+双滦,shuang luan
+鹰手营子矿,ying shou ying zi kuang
+承德,cheng de
+兴隆,xing long
+滦平,luan ping
+隆化,long hua
+丰宁,feng ning
+宽城,kuan cheng
+围场,wei chang
+平泉,ping quan
+新华,xin hua
+运河,yun he
+沧,cang
+青,qing
+东光,dong guang
+海兴,hai xing
+盐山,yan shan
+肃宁,su ning
+南皮,nan pi
+吴桥,wu qiao
+献,xian
+孟村,meng cun
+泊头,bo tou
+任丘,ren qiu
+黄骅,huang hua
+河间,he jian
+安次,an ci
+广阳,guang yang
+固安,gu an
+永清,yong qing
+香河,xiang he
+大城,da cheng
+文安,wen an
+大厂,da chang
+霸州,ba zhou
+三河,san he
+桃城,tao cheng
+冀州,ji zhou
+枣强,zao qiang
+武邑,wu yi
+武强,wu qiang
+饶阳,rao yang
+安平,an ping
+故城,gu cheng
+景,jing
+阜城,fu cheng
+深州,shen zhou
+山西,shan xi
+太原,tai yuan
+大同,da tong
+阳泉,yang quan
+长治,chang zhi
+晋城,jin cheng
+朔州,shuo zhou
+晋中,jin zhong
+运城,yun cheng
+忻州,xin zhou
+临汾,lin fen
+吕梁,lv liang
+小店,xiao dian
+迎泽,ying ze
+杏花岭,xing hua ling
+尖草坪,jian cao ping
+万柏林,wan bai lin
+晋源,jin yuan
+清徐,qing xu
+阳曲,yang qu
+娄烦,lou fan
+古交,gu jiao
+新荣,xin rong
+平城,ping cheng
+云冈,yun gang
+云州,yun zhou
+阳高,yang gao
+天镇,tian zhen
+广灵,guang ling
+灵丘,ling qiu
+浑源,hun yuan
+左云,zuo yun
+城,cheng
+矿,kuang
+郊,jiao
+平定,ping ding
+盂,yu
+潞州,lu zhou
+上党,shang dang
+屯留,tun liu
+潞城,lu cheng
+襄垣,xiang yuan
+平顺,ping shun
+黎城,li cheng
+壶关,hu guan
+长子,zhang zi
+武乡,wu xiang
+沁,qin
+沁源,qin yuan
+城,cheng
+沁水,qin shui
+阳城,yang cheng
+陵川,ling chuan
+泽州,ze zhou
+高平,gao ping
+朔城,shuo cheng
+平鲁,ping lu
+山阴,shan yin
+应,ying
+右玉,you yu
+怀仁,huai ren
+榆次,yu ci
+太谷,tai gu
+榆社,yu she
+左权,zuo quan
+和顺,he shun
+昔阳,xi yang
+寿阳,shou yang
+祁,qi
+平遥,ping yao
+灵石,ling shi
+介休,jie xiu
+盐湖,yan hu
+临猗,lin yi
+万荣,wan rong
+闻喜,wen xi
+稷山,ji shan
+新绛,xin jiang
+绛,jiang
+垣曲,yuan qu
+夏,xia
+平陆,ping lu
+芮城,rui cheng
+永济,yong ji
+河津,he jin
+忻府,xin fu
+定襄,ding xiang
+五台,wu tai
+代,dai
+繁峙,fan shi
+宁武,ning wu
+静乐,jing le
+神池,shen chi
+五寨,wu zhai
+岢岚,ke lan
+河曲,he qu
+保德,bao de
+偏关,pian guan
+原平,yuan ping
+尧都,yao du
+曲沃,qu wo
+翼城,yi cheng
+襄汾,xiang fen
+洪洞,hong tong
+古,gu
+安泽,an ze
+浮山,fu shan
+吉,ji
+乡宁,xiang ning
+大宁,da ning
+隰,xi
+永和,yong he
+蒲,pu
+汾西,fen xi
+侯马,hou ma
+霍州,huo zhou
+离石,li shi
+文水,wen shui
+交城,jiao cheng
+兴,xing
+临,lin
+柳林,liu lin
+石楼,shi lou
+岚,lan
+方山,fang shan
+中阳,zhong yang
+交口,jiao kou
+孝义,xiao yi
+汾阳,fen yang
+内蒙古,nei meng gu
+呼和浩特,hu he hao te
+包头,bao tou
+乌海,wu hai
+赤峰,chi feng
+通辽,tong liao
+鄂尔多斯,e er duo si
+呼伦贝尔,hu lun bei er
+巴彦淖尔,ba yan nao er
+乌兰察布,wu lan cha bu
+兴安,xing an
+锡林郭勒,xi lin guo le
+阿拉善,a la shan
+新城,xin cheng
+回民,hui min
+玉泉,yu quan
+赛罕,sai han
+托克托,tuo ke tuo
+和林格尔,he lin ge er
+清水河,qing shui he
+武川,wu chuan
+土默特左,tu mo te zuo
+东河,dong he
+昆都仑,kun du lun
+青山,qing shan
+石拐,shi guai
+白云鄂博矿,bai yun e bo kuang
+九原,jiu yuan
+固阳,gu yang
+土默特右,tu mo te you
+达尔罕茂明安联合,da er han mao ming an lian he
+海勃湾,hai bo wan
+海南,hai nan
+乌达,wu da
+红山,hong shan
+元宝山,yuan bao shan
+松山,song shan
+林西,lin xi
+宁城,ning cheng
+阿鲁科尔沁,a lu ke er qin
+巴林左,ba lin zuo
+巴林右,ba lin you
+克什克腾,ke shi ke teng
+翁牛特,weng niu te
+喀喇沁,ka la qin
+敖汉,ao han
+科尔沁,ke er qin
+开鲁,kai lu
+科尔沁左翼中,ke er qin zuo yi zhong
+科尔沁左翼后,ke er qin zuo yi hou
+库伦,ku lun
+奈曼,nai man
+扎鲁特,zha lu te
+霍林郭勒,huo lin guo le
+东胜,dong sheng
+康巴什,kang ba shi
+达拉特,da la te
+准格尔,zhun ge er
+鄂托克前,e tuo ke qian
+鄂托克,e tuo ke
+杭锦,hang jin
+乌审,wu shen
+伊金霍洛,yi jin huo luo
+海拉尔,hai la er
+扎赉诺尔,zha lai nuo er
+阿荣,a rong
+莫力达瓦,mo li da wa
+鄂伦春,e lun chun
+鄂温克,e wen ke
+陈巴尔虎,chen ba er hu
+新巴尔虎左,xin ba er hu zuo
+新巴尔虎右,xin ba er hu you
+满洲里,man zhou li
+牙克石,ya ke shi
+扎兰屯,zha lan tun
+额尔古纳,e er gu na
+根河,gen he
+临河,lin he
+五原,wu yuan
+磴口,deng kou
+乌拉特前,wu la te qian
+乌拉特中,wu la te zhong
+乌拉特后,wu la te hou
+杭锦后,hang jin hou
+集宁,ji ning
+卓资,zhuo zi
+化德,hua de
+商都,shang du
+兴和,xing he
+凉城,liang cheng
+察哈尔右翼前,cha ha er you yi qian
+察哈尔右翼中,cha ha er you yi zhong
+察哈尔右翼后,cha ha er you yi hou
+四子王,si zi wang
+丰镇,feng zhen
+乌兰浩特,wu lan hao te
+阿尔山,a er shan
+科尔沁右翼前,ke er qin you yi qian
+科尔沁右翼中,ke er qin you yi zhong
+扎赉特,zha lai te
+突泉,tu quan
+二连浩特,er lian hao te
+锡林浩特,xi lin hao te
+阿巴嘎,a ba ga
+苏尼特左,su ni te zuo
+苏尼特右,su ni te you
+东乌珠穆沁,dong wu zhu mu qin
+西乌珠穆沁,xi wu zhu mu qin
+太仆寺,tai pu si
+镶黄,xiang huang
+正镶白,zheng xiang bai
+正蓝,zheng lan
+多伦,duo lun
+阿拉善左,a la shan zuo
+阿拉善右,a la shan you
+额济纳,e ji na
+辽宁,liao ning
+沈阳,shen yang
+大连,da lian
+鞍山,an shan
+抚顺,fu shun
+本溪,ben xi
+丹东,dan dong
+锦州,jin zhou
+营口,ying kou
+阜新,fu xin
+辽阳,liao yang
+盘锦,pan jin
+铁岭,tie ling
+朝阳,chao yang
+葫芦岛,hu lu dao
+和平,he ping
+沈河,shen he
+大东,da dong
+皇姑,huang gu
+铁西,tie xi
+苏家屯,su jia tun
+浑南,hun nan
+沈北新,shen bei xin
+于洪,yu hong
+辽中,liao zhong
+康平,kang ping
+法库,fa ku
+新民,xin min
+中山,zhong shan
+西岗,xi gang
+沙河口,sha he kou
+甘井子,gan jing zi
+旅顺口,lv shun kou
+金州,jin zhou
+普兰店,pu lan dian
+长海,chang hai
+瓦房店,wa fang dian
+庄河,zhuang he
+铁东,tie dong
+铁西,tie xi
+立山,li shan
+千山,qian shan
+台安,tai an
+岫岩,xiu yan
+海城,hai cheng
+新抚,xin fu
+东洲,dong zhou
+望花,wang hua
+顺城,shun cheng
+抚顺,fu shun
+新宾,xin bin
+清原,qing yuan
+平山,ping shan
+溪湖,xi hu
+明山,ming shan
+南芬,nan fen
+本溪,ben xi
+桓仁,huan ren
+元宝,yuan bao
+振兴,zhen xing
+振安,zhen an
+宽甸,kuan dian
+东港,dong gang
+凤城,feng cheng
+古塔,gu ta
+凌河,ling he
+太和,tai he
+黑山,hei shan
+义,yi
+凌海,ling hai
+北镇,bei zhen
+站前,zhan qian
+西市,xi shi
+鲅鱼圈,ba yu quan
+老边,lao bian
+盖州,gai zhou
+大石桥,da shi qiao
+海州,hai zhou
+新邱,xin qiu
+太平,tai ping
+清河门,qing he men
+细河,xi he
+阜新,fu xin
+彰武,zhang wu
+白塔,bai ta
+文圣,wen sheng
+宏伟,hong wei
+弓长岭,gong chang ling
+太子河,tai zi he
+辽阳,liao yang
+灯塔,deng ta
+双台子,shuang tai zi
+兴隆台,xing long tai
+大洼,da wa
+盘山,pan shan
+银州,yin zhou
+清河,qing he
+铁岭,tie ling
+西丰,xi feng
+昌图,chang tu
+调兵山,diao bing shan
+开原,kai yuan
+双塔,shuang ta
+龙城,long cheng
+朝阳,chao yang
+建平,jian ping
+喀喇沁左翼,ka la qin zuo yi
+北票,bei piao
+凌源,ling yuan
+连山,lian shan
+龙港,long gang
+南票,nan piao
+绥中,sui zhong
+建昌,jian chang
+兴城,xing cheng
+吉林,ji lin
+长春,chang chun
+吉林,ji lin
+四平,si ping
+辽源,liao yuan
+通化,tong hua
+白山,bai shan
+松原,song yuan
+白城,bai cheng
+延边,yan bian
+南关,nan guan
+宽城,kuan cheng
+朝阳,chao yang
+二道,er dao
+绿园,lu yuan
+双阳,shuang yang
+九台,jiu tai
+农安,nong an
+榆树,yu shu
+德惠,de hui
+公主岭,gong zhu ling
+昌邑,chang yi
+龙潭,long tan
+船营,chuan ying
+丰满,feng man
+永吉,yong ji
+蛟河,jiao he
+桦甸,hua dian
+舒兰,shu lan
+磐石,pan shi
+铁西,tie xi
+铁东,tie dong
+梨树,li shu
+伊通,yi tong
+双辽,shuang liao
+龙山,long shan
+西安,xi an
+东丰,dong feng
+东辽,dong liao
+东昌,dong chang
+二道江,er dao jiang
+通化,tong hua
+辉南,hui nan
+柳河,liu he
+梅河口,mei he kou
+集安,ji an
+浑江,hun jiang
+江源,jiang yuan
+抚松,fu song
+靖宇,jing yu
+长白,chang bai
+临江,lin jiang
+宁江,ning jiang
+前郭尔罗斯,qian guo er luo si
+长岭,chang ling
+乾安,qian an
+扶余,fu yu
+洮北,tao bei
+镇赉,zhen lai
+通榆,tong yu
+洮南,tao nan
+大安,da an
+延吉,yan ji
+图们,tu men
+敦化,dun hua
+珲春,hun chun
+龙井,long jing
+和龙,he long
+汪清,wang qing
+安图,an tu
+黑龙江,hei long jiang
+哈尔滨,ha er bin
+齐齐哈尔,qi qi ha er
+鸡西,ji xi
+鹤岗,he gang
+双鸭山,shuang ya shan
+大庆,da qing
+伊春,yi chun
+佳木斯,jia mu si
+七台河,qi tai he
+牡丹江,mu dan jiang
+黑河,hei he
+绥化,sui hua
+大兴安岭,da xing an ling
+道里,dao li
+南岗,nan gang
+道外,dao wai
+平房,ping fang
+松北,song bei
+香坊,xiang fang
+呼兰,hu lan
+阿城,a cheng
+双城,shuang cheng
+依兰,yi lan
+方正,fang zheng
+宾,bin
+巴彦,ba yan
+木兰,mu lan
+通河,tong he
+延寿,yan shou
+尚志,shang zhi
+五常,wu chang
+龙沙,long sha
+建华,jian hua
+铁锋,tie feng
+昂昂溪,ang ang xi
+富拉尔基,fu la er ji
+碾子山,nian zi shan
+梅里斯,mei li si
+龙江,long jiang
+依安,yi an
+泰来,tai lai
+甘南,gan nan
+富裕,fu yu
+克山,ke shan
+克东,ke dong
+拜泉,bai quan
+讷河,ne he
+鸡冠,ji guan
+恒山,heng shan
+滴道,di dao
+梨树,li shu
+城子河,cheng zi he
+麻山,ma shan
+鸡东,ji dong
+虎林,hu lin
+密山,mi shan
+向阳,xiang yang
+工农,gong nong
+南山,nan shan
+兴安,xing an
+东山,dong shan
+兴山,xing shan
+萝北,luo bei
+绥滨,sui bin
+尖山,jian shan
+岭东,ling dong
+四方台,si fang tai
+宝山,bao shan
+集贤,ji xian
+友谊,you yi
+宝清,bao qing
+饶河,rao he
+萨尔图,sa er tu
+龙凤,long feng
+让胡路,rang hu lu
+红岗,hong gang
+大同,da tong
+肇州,zhao zhou
+肇源,zhao yuan
+林甸,lin dian
+杜尔伯特,du er bo te
+伊美,yi mei
+乌翠,wu cui
+友好,you hao
+嘉荫,jia yin
+汤旺,tang wang
+丰林,feng lin
+大箐山,da qing shan
+南岔,nan cha
+金林,jin lin
+铁力,tie li
+向阳,xiang yang
+前进,qian jin
+东风,dong feng
+郊,jiao
+桦南,hua nan
+桦川,hua chuan
+汤原,tang yuan
+同江,tong jiang
+富锦,fu jin
+抚远,fu yuan
+新兴,xin xing
+桃山,tao shan
+茄子河,qie zi he
+勃利,bo li
+东安,dong an
+阳明,yang ming
+爱民,ai min
+西安,xi an
+林口,lin kou
+绥芬河,sui fen he
+海林,hai lin
+宁安,ning an
+穆棱,mu ling
+东宁,dong ning
+爱辉,ai hui
+逊克,xun ke
+孙吴,sun wu
+北安,bei an
+五大连池,wu da lian chi
+嫩江,nen jiang
+北林,bei lin
+望奎,wang kui
+兰西,lan xi
+青冈,qing gang
+庆安,qing an
+明水,ming shui
+绥棱,sui ling
+安达,an da
+肇东,zhao dong
+海伦,hai lun
+漠河,mo he
+呼玛,hu ma
+塔河,ta he
+上海,shang hai
+黄浦,huang pu
+徐汇,xu hui
+长宁,chang ning
+静安,jing an
+普陀,pu tuo
+虹口,hong kou
+杨浦,yang pu
+闵行,min hang
+宝山,bao shan
+嘉定,jia ding
+浦东新,pu dong xin
+金山,jin shan
+松江,song jiang
+青浦,qing pu
+奉贤,feng xian
+崇明,chong ming
+江苏,jiang su
+南京,nan jing
+无锡,wu xi
+徐州,xu zhou
+常州,chang zhou
+苏州,su zhou
+南通,nan tong
+连云港,lian yun gang
+淮安,huai an
+盐城,yan cheng
+扬州,yang zhou
+镇江,zhen jiang
+泰州,tai zhou
+宿迁,su qian
+玄武,xuan wu
+秦淮,qin huai
+建邺,jian ye
+鼓楼,gu lou
+浦口,pu kou
+栖霞,qi xia
+雨花台,yu hua tai
+江宁,jiang ning
+六合,lu he
+溧水,li shui
+高淳,gao chun
+锡山,xi shan
+惠山,hui shan
+滨湖,bin hu
+梁溪,liang xi
+新吴,xin wu
+江阴,jiang yin
+宜兴,yi xing
+鼓楼,gu lou
+云龙,yun long
+贾汪,jia wang
+泉山,quan shan
+铜山,tong shan
+丰,feng
+沛,pei
+睢宁,sui ning
+新沂,xin yi
+邳州,pi zhou
+天宁,tian ning
+钟楼,zhong lou
+新北,xin bei
+武进,wu jin
+金坛,jin tan
+溧阳,li yang
+虎丘,hu qiu
+吴中,wu zhong
+相城,xiang cheng
+姑苏,gu su
+吴江,wu jiang
+常熟,chang shu
+张家港,zhang jia gang
+昆山,kun shan
+太仓,tai cang
+通州,tong zhou
+崇川,chong chuan
+海门,hai men
+如东,ru dong
+启东,qi dong
+如皋,ru gao
+海安,hai an
+连云,lian yun
+海州,hai zhou
+赣榆,gan yu
+东海,dong hai
+灌云,guan yun
+灌南,guan nan
+淮安,huai an
+淮阴,huai yin
+清江浦,qing jiang pu
+洪泽,hong ze
+涟水,lian shui
+盱眙,xu yi
+金湖,jin hu
+亭湖,ting hu
+盐都,yan du
+大丰,da feng
+响水,xiang shui
+滨海,bin hai
+阜宁,fu ning
+射阳,she yang
+建湖,jian hu
+东台,dong tai
+广陵,guang ling
+邗江,han jiang
+江都,jiang du
+宝应,bao ying
+仪征,yi zheng
+高邮,gao you
+京口,jing kou
+润州,run zhou
+丹徒,dan tu
+丹阳,dan yang
+扬中,yang zhong
+句容,ju rong
+海陵,hai ling
+高港,gao gang
+姜堰,jiang yan
+兴化,xing hua
+靖江,jing jiang
+泰兴,tai xing
+宿城,su cheng
+宿豫,su yu
+沭阳,shu yang
+泗阳,si yang
+泗洪,si hong
+浙江,zhe jiang
+杭州,hang zhou
+宁波,ning bo
+温州,wen zhou
+嘉兴,jia xing
+湖州,hu zhou
+绍兴,shao xing
+金华,jin hua
+衢州,qu zhou
+舟山,zhou shan
+台州,tai zhou
+丽水,li shui
+上城,shang cheng
+拱墅,gong shu
+西湖,xi hu
+滨江,bin jiang
+萧山,xiao shan
+余杭,yu hang
+富阳,fu yang
+临安,lin an
+临平,lin ping
+钱塘,qian tang
+桐庐,tong lu
+淳安,chun an
+建德,jian de
+海曙,hai shu
+江北,jiang bei
+北仑,bei lun
+镇海,zhen hai
+鄞州,yin zhou
+奉化,feng hua
+象山,xiang shan
+宁海,ning hai
+余姚,yu yao
+慈溪,ci xi
+鹿城,lu cheng
+龙湾,long wan
+瓯海,ou hai
+洞头,dong tou
+永嘉,yong jia
+平阳,ping yang
+苍南,cang nan
+文成,wen cheng
+泰顺,tai shun
+瑞安,rui an
+乐清,yue qing
+龙港,long gang
+南湖,nan hu
+秀洲,xiu zhou
+嘉善,jia shan
+海盐,hai yan
+海宁,hai ning
+平湖,ping hu
+桐乡,tong xiang
+吴兴,wu xing
+南浔,nan xun
+德清,de qing
+长兴,chang xing
+安吉,an ji
+越城,yue cheng
+柯桥,ke qiao
+上虞,shang yu
+新昌,xin chang
+诸暨,zhu ji
+嵊州,sheng zhou
+婺城,wu cheng
+金东,jin dong
+武义,wu yi
+浦江,pu jiang
+磐安,pan an
+兰溪,lan xi
+义乌,yi wu
+东阳,dong yang
+永康,yong kang
+柯城,ke cheng
+衢江,qu jiang
+常山,chang shan
+开化,kai hua
+龙游,long you
+江山,jiang shan
+定海,ding hai
+普陀,pu tuo
+岱山,dai shan
+嵊泗,sheng si
+椒江,jiao jiang
+黄岩,huang yan
+路桥,lu qiao
+三门,san men
+天台,tian tai
+仙居,xian ju
+温岭,wen ling
+临海,lin hai
+玉环,yu huan
+莲都,lian du
+青田,qing tian
+缙云,jin yun
+遂昌,sui chang
+松阳,song yang
+云和,yun he
+庆元,qing yuan
+景宁,jing ning
+龙泉,long quan
+安徽,an hui
+合肥,he fei
+芜湖,wu hu
+蚌埠,beng bu
+淮南,huai nan
+马鞍山,ma an shan
+淮北,huai bei
+铜陵,tong ling
+安庆,an qing
+黄山,huang shan
+滁州,chu zhou
+阜阳,fu yang
+宿州,su zhou
+六安,lu an
+亳州,bo zhou
+池州,chi zhou
+宣城,xuan cheng
+瑶海,yao hai
+庐阳,lu yang
+蜀山,shu shan
+包河,bao he
+长丰,chang feng
+肥东,fei dong
+肥西,fei xi
+庐江,lu jiang
+巢湖,chao hu
+镜湖,jing hu
+鸠江,jiu jiang
+弋江,yi jiang
+湾沚,wan zhi
+繁昌,fan chang
+南陵,nan ling
+无为,wu wei
+龙子湖,long zi hu
+蚌山,beng shan
+禹会,yu hui
+淮上,huai shang
+怀远,huai yuan
+五河,wu he
+固镇,gu zhen
+大通,da tong
+田家庵,tian jia an
+谢家集,xie jia ji
+八公山,ba gong shan
+潘集,pan ji
+凤台,feng tai
+寿,shou
+花山,hua shan
+雨山,yu shan
+博望,bo wang
+当涂,dang tu
+含山,han shan
+和,he
+杜集,du ji
+相山,xiang shan
+烈山,lie shan
+濉溪,sui xi
+铜官,tong guan
+义安,yi an
+郊,jiao
+枞阳,zong yang
+迎江,ying jiang
+大观,da guan
+宜秀,yi xiu
+怀宁,huai ning
+太湖,tai hu
+宿松,su song
+望江,wang jiang
+岳西,yue xi
+桐城,tong cheng
+潜山,qian shan
+屯溪,tun xi
+黄山,huang shan
+徽州,hui zhou
+歙,she
+休宁,xiu ning
+黟,yi
+祁门,qi men
+琅琊,lang ya
+南谯,nan qiao
+来安,lai an
+全椒,quan jiao
+定远,ding yuan
+凤阳,feng yang
+天长,tian chang
+明光,ming guang
+颍州,ying zhou
+颍东,ying dong
+颍泉,ying quan
+临泉,lin quan
+太和,tai he
+阜南,fu nan
+颍上,ying shang
+界首,jie shou
+埇桥,yong qiao
+砀山,dang shan
+萧,xiao
+灵璧,ling bi
+泗,si
+金安,jin an
+裕安,yu an
+叶集,ye ji
+霍邱,huo qiu
+舒城,shu cheng
+金寨,jin zhai
+霍山,huo shan
+谯城,qiao cheng
+涡阳,guo yang
+蒙城,meng cheng
+利辛,li xin
+贵池,gui chi
+东至,dong zhi
+石台,shi tai
+青阳,qing yang
+宣州,xuan zhou
+郎溪,lang xi
+泾,jing
+绩溪,ji xi
+旌德,jing de
+宁国,ning guo
+广德,guang de
+福建,fu jian
+福州,fu zhou
+厦门,xia men
+莆田,pu tian
+三明,san ming
+泉州,quan zhou
+漳州,zhang zhou
+南平,nan ping
+龙岩,long yan
+宁德,ning de
+鼓楼,gu lou
+台江,tai jiang
+仓山,cang shan
+马尾,ma wei
+晋安,jin an
+长乐,chang le
+闽侯,min hou
+连江,lian jiang
+罗源,luo yuan
+闽清,min qing
+永泰,yong tai
+平潭,ping tan
+福清,fu qing
+思明,si ming
+海沧,hai cang
+湖里,hu li
+集美,ji mei
+同安,tong an
+翔安,xiang an
+城厢,cheng xiang
+涵江,han jiang
+荔城,li cheng
+秀屿,xiu yu
+仙游,xian you
+三元,san yuan
+沙县,sha xian
+明溪,ming xi
+清流,qing liu
+宁化,ning hua
+大田,da tian
+尤溪,you xi
+将乐,jiang le
+泰宁,tai ning
+建宁,jian ning
+永安,yong an
+鲤城,li cheng
+丰泽,feng ze
+洛江,luo jiang
+泉港,quan gang
+惠安,hui an
+安溪,an xi
+永春,yong chun
+德化,de hua
+金门,jin men
+石狮,shi shi
+晋江,jin jiang
+南安,nan an
+芗城,xiang cheng
+龙文,long wen
+龙海,long hai
+长泰,chang tai
+云霄,yun xiao
+漳浦,zhang pu
+诏安,zhao an
+东山,dong shan
+南靖,nan jing
+平和,ping he
+华安,hua an
+延平,yan ping
+建阳,jian yang
+顺昌,shun chang
+浦城,pu cheng
+光泽,guang ze
+松溪,song xi
+政和,zheng he
+邵武,shao wu
+武夷山,wu yi shan
+建瓯,jian ou
+新罗,xin luo
+永定,yong ding
+长汀,chang ting
+上杭,shang hang
+武平,wu ping
+连城,lian cheng
+漳平,zhang ping
+蕉城,jiao cheng
+霞浦,xia pu
+古田,gu tian
+屏南,ping nan
+寿宁,shou ning
+周宁,zhou ning
+柘荣,zhe rong
+福安,fu an
+福鼎,fu ding
+江西,jiang xi
+南昌,nan chang
+景德镇,jing de zhen
+萍乡,ping xiang
+九江,jiu jiang
+新余,xin yu
+鹰潭,ying tan
+赣州,gan zhou
+吉安,ji an
+宜春,yi chun
+抚州,fu zhou
+上饶,shang rao
+东湖,dong hu
+西湖,xi hu
+青云谱,qing yun pu
+青山湖,qing shan hu
+新建,xin jian
+红谷滩,hong gu tan
+南昌,nan chang
+安义,an yi
+进贤,jin xian
+昌江,chang jiang
+珠山,zhu shan
+浮梁,fu liang
+乐平,le ping
+安源,an yuan
+湘东,xiang dong
+莲花,lian hua
+上栗,shang li
+芦溪,lu xi
+濂溪,lian xi
+浔阳,xun yang
+柴桑,chai sang
+武宁,wu ning
+修水,xiu shui
+永修,yong xiu
+德安,de an
+都昌,du chang
+湖口,hu kou
+彭泽,peng ze
+瑞昌,rui chang
+共青城,gong qing cheng
+庐山,lu shan
+渝水,yu shui
+分宜,fen yi
+月湖,yue hu
+余江,yu jiang
+贵溪,gui xi
+章贡,zhang gong
+南康,nan kang
+赣县,gan xian
+信丰,xin feng
+大余,da yu
+上犹,shang you
+崇义,chong yi
+安远,an yuan
+定南,ding nan
+全南,quan nan
+宁都,ning du
+于都,yu du
+兴国,xing guo
+会昌,hui chang
+寻乌,xun wu
+石城,shi cheng
+瑞金,rui jin
+龙南,long nan
+吉州,ji zhou
+青原,qing yuan
+吉安,ji an
+吉水,ji shui
+峡江,xia jiang
+新干,xin gan
+永丰,yong feng
+泰和,tai he
+遂川,sui chuan
+万安,wan an
+安福,an fu
+永新,yong xin
+井冈山,jing gang shan
+袁州,yuan zhou
+奉新,feng xin
+万载,wan zai
+上高,shang gao
+宜丰,yi feng
+靖安,jing an
+铜鼓,tong gu
+丰城,feng cheng
+樟树,zhang shu
+高安,gao an
+临川,lin chuan
+东乡,dong xiang
+南城,nan cheng
+黎川,li chuan
+南丰,nan feng
+崇仁,chong ren
+乐安,le an
+宜黄,yi huang
+金溪,jin xi
+资溪,zi xi
+广昌,guang chang
+信州,xin zhou
+广丰,guang feng
+广信,guang xin
+玉山,yu shan
+铅山,yan shan
+横峰,heng feng
+弋阳,yi yang
+余干,yu gan
+鄱阳,po yang
+万年,wan nian
+婺源,wu yuan
+德兴,de xing
+山东,shan dong
+济南,ji nan
+青岛,qing dao
+淄博,zi bo
+枣庄,zao zhuang
+东营,dong ying
+烟台,yan tai
+潍坊,wei fang
+济宁,ji ning
+泰安,tai an
+威海,wei hai
+日照,ri zhao
+临沂,lin yi
+德州,de zhou
+聊城,liao cheng
+滨州,bin zhou
+菏泽,he ze
+历下,li xia
+市中,shi zhong
+槐荫,huai yin
+天桥,tian qiao
+历城,li cheng
+长清,chang qing
+章丘,zhang qiu
+济阳,ji yang
+莱芜,lai wu
+钢城,gang cheng
+平阴,ping yin
+商河,shang he
+市南,shi nan
+市北,shi bei
+黄岛,huang dao
+崂山,lao shan
+李沧,li cang
+城阳,cheng yang
+即墨,ji mo
+胶州,jiao zhou
+平度,ping du
+莱西,lai xi
+淄川,zi chuan
+张店,zhang dian
+博山,bo shan
+临淄,lin zi
+周村,zhou cun
+桓台,huan tai
+高青,gao qing
+沂源,yi yuan
+市中,shi zhong
+薛城,xue cheng
+峄城,yi cheng
+台儿庄,tai er zhuang
+山亭,shan ting
+滕州,teng zhou
+东营,dong ying
+河口,he kou
+垦利,ken li
+利津,li jin
+广饶,guang rao
+芝罘,zhi fu
+福山,fu shan
+牟平,mu ping
+莱山,lai shan
+蓬莱,peng lai
+龙口,long kou
+莱阳,lai yang
+莱州,lai zhou
+招远,zhao yuan
+栖霞,qi xia
+海阳,hai yang
+潍城,wei cheng
+寒亭,han ting
+坊子,fang zi
+奎文,kui wen
+临朐,lin qu
+昌乐,chang le
+青州,qing zhou
+诸城,zhu cheng
+寿光,shou guang
+安丘,an qiu
+高密,gao mi
+昌邑,chang yi
+任城,ren cheng
+兖州,yan zhou
+微山,wei shan
+鱼台,yu tai
+金乡,jin xiang
+嘉祥,jia xiang
+汶上,wen shang
+泗水,si shui
+梁山,liang shan
+曲阜,qu fu
+邹城,zou cheng
+泰山,tai shan
+岱岳,dai yue
+宁阳,ning yang
+东平,dong ping
+新泰,xin tai
+肥城,fei cheng
+环翠,huan cui
+文登,wen deng
+荣成,rong cheng
+乳山,ru shan
+东港,dong gang
+岚山,lan shan
+五莲,wu lian
+莒,ju
+兰山,lan shan
+罗庄,luo zhuang
+河东,he dong
+沂南,yi nan
+郯城,tan cheng
+沂水,yi shui
+兰陵,lan ling
+费,fei
+平邑,ping yi
+莒南,ju nan
+蒙阴,meng yin
+临沭,lin shu
+德城,de cheng
+陵城,ling cheng
+宁津,ning jin
+庆云,qing yun
+临邑,lin yi
+齐河,qi he
+平原,ping yuan
+夏津,xia jin
+武城,wu cheng
+乐陵,lao ling
+禹城,yu cheng
+东昌府,dong chang fu
+茌平,chi ping
+阳谷,yang gu
+莘,shen
+东阿,dong e
+冠,guan
+高唐,gao tang
+临清,lin qing
+滨城,bin cheng
+沾化,zhan hua
+惠民,hui min
+阳信,yang xin
+无棣,wu di
+博兴,bo xing
+邹平,zou ping
+牡丹,mu dan
+定陶,ding tao
+曹,cao
+单,shan
+成武,cheng wu
+巨野,ju ye
+郓城,yun cheng
+鄄城,juan cheng
+东明,dong ming
+河南,he nan
+郑州,zheng zhou
+开封,kai feng
+洛阳,luo yang
+平顶山,ping ding shan
+安阳,an yang
+鹤壁,he bi
+新乡,xin xiang
+焦作,jiao zuo
+濮阳,pu yang
+许昌,xu chang
+漯河,luo he
+三门峡,san men xia
+南阳,nan yang
+商丘,shang qiu
+信阳,xin yang
+周口,zhou kou
+驻马店,zhu ma dian
+济源,ji yuan
+中原,zhong yuan
+二七,er qi
+管城,guan cheng
+金水,jin shui
+上街,shang jie
+惠济,hui ji
+中牟,zhong mu
+巩义,gong yi
+荥阳,xing yang
+新密,xin mi
+新郑,xin zheng
+登封,deng feng
+龙亭,long ting
+顺河,shun he
+鼓楼,gu lou
+禹王台,yu wang tai
+祥符,xiang fu
+杞,qi
+通许,tong xu
+尉氏,wei shi
+兰考,lan kao
+老城,lao cheng
+西工,xi gong
+瀍河,chan he
+涧西,jian xi
+偃师,yan shi
+孟津,meng jin
+洛龙,luo long
+新安,xin an
+栾川,luan chuan
+嵩,song
+汝阳,ru yang
+宜阳,yi yang
+洛宁,luo ning
+伊川,yi chuan
+新华,xin hua
+卫东,wei dong
+石龙,shi long
+湛河,zhan he
+宝丰,bao feng
+叶,ye
+鲁山,lu shan
+郏,jia
+舞钢,wu gang
+汝州,ru zhou
+文峰,wen feng
+北关,bei guan
+殷都,yin du
+龙安,long an
+安阳,an yang
+汤阴,tang yin
+滑,hua
+内黄,nei huang
+林州,lin zhou
+鹤山,he shan
+山城,shan cheng
+淇滨,qi bin
+浚,xun
+淇,qi
+红旗,hong qi
+卫滨,wei bin
+凤泉,feng quan
+牧野,mu ye
+新乡,xin xiang
+获嘉,huo jia
+原阳,yuan yang
+延津,yan jin
+封丘,feng qiu
+卫辉,wei hui
+辉县,hui xian
+长垣,chang yuan
+解放,jie fang
+中站,zhong zhan
+马村,ma cun
+山阳,shan yang
+修武,xiu wu
+博爱,bo ai
+武陟,wu zhi
+温,wen
+沁阳,qin yang
+孟州,meng zhou
+华龙,hua long
+清丰,qing feng
+南乐,nan le
+范,fan
+台前,tai qian
+濮阳,pu yang
+魏都,wei du
+建安,jian an
+鄢陵,yan ling
+襄城,xiang cheng
+禹州,yu zhou
+长葛,chang ge
+源汇,yuan hui
+郾城,yan cheng
+召陵,shao ling
+舞阳,wu yang
+临颍,lin ying
+湖滨,hu bin
+陕州,shan zhou
+渑池,mian chi
+卢氏,lu shi
+义马,yi ma
+灵宝,ling bao
+宛城,wan cheng
+卧龙,wo long
+南召,nan zhao
+方城,fang cheng
+西峡,xi xia
+镇平,zhen ping
+内乡,nei xiang
+淅川,xi chuan
+社旗,she qi
+唐河,tang he
+新野,xin ye
+桐柏,tong bai
+邓州,deng zhou
+梁园,liang yuan
+睢阳,sui yang
+民权,min quan
+睢,sui
+宁陵,ning ling
+柘城,zhe cheng
+虞城,yu cheng
+夏邑,xia yi
+永城,yong cheng
+浉河,shi he
+平桥,ping qiao
+罗山,luo shan
+光山,guang shan
+新,xin
+商城,shang cheng
+固始,gu shi
+潢川,huang chuan
+淮滨,huai bin
+息,xi
+川汇,chuan hui
+淮阳,huai yang
+扶沟,fu gou
+西华,xi hua
+商水,shang shui
+沈丘,shen qiu
+郸城,dan cheng
+太康,tai kang
+鹿邑,lu yi
+项城,xiang cheng
+驿城,yi cheng
+西平,xi ping
+上蔡,shang cai
+平舆,ping yu
+正阳,zheng yang
+确山,que shan
+泌阳,bi yang
+汝南,ru nan
+遂平,sui ping
+新蔡,xin cai
+湖北,hu bei
+武汉,wu han
+黄石,huang shi
+十堰,shi yan
+宜昌,yi chang
+襄阳,xiang yang
+鄂州,e zhou
+荆门,jing men
+孝感,xiao gan
+荆州,jing zhou
+黄冈,huang gang
+咸宁,xian ning
+随州,sui zhou
+恩施,en shi
+江岸,jiang an
+江汉,jiang han
+硚口,qiao kou
+汉阳,han yang
+武昌,wu chang
+青山,qing shan
+洪山,hong shan
+东西湖,dong xi hu
+汉南,han nan
+蔡甸,cai dian
+江夏,jiang xia
+黄陂,huang pi
+新洲,xin zhou
+黄石港,huang shi gang
+西塞山,xi sai shan
+下陆,xia lu
+铁山,tie shan
+阳新,yang xin
+大冶,da ye
+茅箭,mao jian
+张湾,zhang wan
+郧阳,yun yang
+郧西,yun xi
+竹山,zhu shan
+竹溪,zhu xi
+房,fang
+丹江口,dan jiang kou
+西陵,xi ling
+伍家岗,wu jia gang
+点军,dian jun
+猇亭,xiao ting
+夷陵,yi ling
+远安,yuan an
+兴山,xing shan
+秭归,zi gui
+长阳,chang yang
+五峰,wu feng
+宜都,yi du
+当阳,dang yang
+枝江,zhi jiang
+襄城,xiang cheng
+樊城,fan cheng
+襄州,xiang zhou
+南漳,nan zhang
+谷城,gu cheng
+保康,bao kang
+老河口,lao he kou
+枣阳,zao yang
+宜城,yi cheng
+梁子湖,liang zi hu
+华容,hua rong
+鄂城,e cheng
+东宝,dong bao
+掇刀,duo dao
+沙洋,sha yang
+钟祥,zhong xiang
+京山,jing shan
+孝南,xiao nan
+孝昌,xiao chang
+大悟,da wu
+云梦,yun meng
+应城,ying cheng
+安陆,an lu
+汉川,han chuan
+沙市,sha shi
+荆州,jing zhou
+公安,gong an
+江陵,jiang ling
+石首,shi shou
+洪湖,hong hu
+松滋,song zi
+监利,jian li
+黄州,huang zhou
+团风,tuan feng
+红安,hong an
+罗田,luo tian
+英山,ying shan
+浠水,xi shui
+蕲春,qi chun
+黄梅,huang mei
+麻城,ma cheng
+武穴,wu xue
+咸安,xian an
+嘉鱼,jia yu
+通城,tong cheng
+崇阳,chong yang
+通山,tong shan
+赤壁,chi bi
+曾都,zeng du
+随,sui
+广水,guang shui
+恩施,en shi
+利川,li chuan
+建始,jian shi
+巴东,ba dong
+宣恩,xuan en
+咸丰,xian feng
+来凤,lai feng
+鹤峰,he feng
+仙桃,xian tao
+潜江,qian jiang
+天门,tian men
+神农架,shen nong jia
+湖南,hu nan
+长沙,chang sha
+株洲,zhu zhou
+湘潭,xiang tan
+衡阳,heng yang
+邵阳,shao yang
+岳阳,yue yang
+常德,chang de
+张家界,zhang jia jie
+益阳,yi yang
+郴州,chen zhou
+永州,yong zhou
+怀化,huai hua
+娄底,lou di
+湘西,xiang xi
+芙蓉,fu rong
+天心,tian xin
+岳麓,yue lu
+开福,kai fu
+雨花,yu hua
+望城,wang cheng
+长沙,chang sha
+浏阳,liu yang
+宁乡,ning xiang
+荷塘,he tang
+芦淞,lu song
+石峰,shi feng
+天元,tian yuan
+渌口,lu kou
+攸,you
+茶陵,cha ling
+炎陵,yan ling
+醴陵,li ling
+雨湖,yu hu
+岳塘,yue tang
+湘潭,xiang tan
+湘乡,xiang xiang
+韶山,shao shan
+珠晖,zhu hui
+雁峰,yan feng
+石鼓,shi gu
+蒸湘,zheng xiang
+南岳,nan yue
+衡阳,heng yang
+衡南,heng nan
+衡山,heng shan
+衡东,heng dong
+祁东,qi dong
+耒阳,lei yang
+常宁,chang ning
+双清,shuang qing
+大祥,da xiang
+北塔,bei ta
+新邵,xin shao
+邵阳,shao yang
+隆回,long hui
+洞口,dong kou
+绥宁,sui ning
+新宁,xin ning
+城步,cheng bu
+武冈,wu gang
+邵东,shao dong
+岳阳楼,yue yang lou
+云溪,yun xi
+君山,jun shan
+岳阳,yue yang
+华容,hua rong
+湘阴,xiang yin
+平江,ping jiang
+汨罗,mi luo
+临湘,lin xiang
+武陵,wu ling
+鼎城,ding cheng
+安乡,an xiang
+汉寿,han shou
+澧,li
+临澧,lin li
+桃源,tao yuan
+石门,shi men
+津市,jin shi
+永定,yong ding
+武陵源,wu ling yuan
+慈利,ci li
+桑植,sang zhi
+资阳,zi yang
+赫山,he shan
+南,nan
+桃江,tao jiang
+安化,an hua
+沅江,yuan jiang
+北湖,bei hu
+苏仙,su xian
+桂阳,gui yang
+宜章,yi zhang
+永兴,yong xing
+嘉禾,jia he
+临武,lin wu
+汝城,ru cheng
+桂东,gui dong
+安仁,an ren
+资兴,zi xing
+零陵,ling ling
+冷水滩,leng shui tan
+东安,dong an
+双牌,shuang pai
+道,dao
+江永,jiang yong
+宁远,ning yuan
+蓝山,lan shan
+新田,xin tian
+江华,jiang hua
+祁阳,qi yang
+鹤城,he cheng
+中方,zhong fang
+沅陵,yuan ling
+辰溪,chen xi
+溆浦,xu pu
+会同,hui tong
+麻阳,ma yang
+新晃,xin huang
+芷江,zhi jiang
+靖州,jing zhou
+通道,tong dao
+洪江,hong jiang
+娄星,lou xing
+双峰,shuang feng
+新化,xin hua
+冷水江,leng shui jiang
+涟源,lian yuan
+吉首,ji shou
+泸溪,lu xi
+凤凰,feng huang
+花垣,hua yuan
+保靖,bao jing
+古丈,gu zhang
+永顺,yong shun
+龙山,long shan
+广东,guang dong
+广州,guang zhou
+荔湾,li wan
+越秀,yue xiu
+海珠,hai zhu
+天河,tian he
+白云,bai yun
+黄埔,huang pu
+番禺,pan yu
+花都,hua du
+南沙,nan sha
+从化,cong hua
+增城,zeng cheng
+韶关,shao guan
+武江,wu jiang
+浈江,zhen jiang
+曲江,qu jiang
+始兴,shi xing
+仁化,ren hua
+翁源,weng yuan
+乳源,ru yuan
+新丰,xin feng
+乐昌,le chang
+南雄,nan xiong
+深圳,shen zhen
+罗湖,luo hu
+福田,fu tian
+南山,nan shan
+宝安,bao an
+龙岗,long gang
+盐田,yan tian
+龙华,long hua
+坪山,ping shan
+光明,guang ming
+珠海,zhu hai
+香洲,xiang zhou
+斗门,dou men
+金湾,jin wan
+佛山,fo shan
+禅城,chan cheng
+南海,nan hai
+顺德,shun de
+三水,san shui
+高明,gao ming
+江门,jiang men
+蓬江,peng jiang
+江海,jiang hai
+新会,xin hui
+台山,tai shan
+开平,kai ping
+鹤山,he shan
+恩平,en ping
+湛江,zhan jiang
+赤坎,chi kan
+霞山,xia shan
+坡头,po tou
+麻章,ma zhang
+遂溪,sui xi
+徐闻,xu wen
+廉江,lian jiang
+雷州,lei zhou
+吴川,wu chuan
+茂名,mao ming
+茂南,mao nan
+电白,dian bai
+高州,gao zhou
+化州,hua zhou
+信宜,xin yi
+肇庆,zhao qing
+端州,duan zhou
+鼎湖,ding hu
+高要,gao yao
+广宁,guang ning
+怀集,huai ji
+封开,feng kai
+德庆,de qing
+四会,si hui
+惠州,hui zhou
+惠城,hui cheng
+惠阳,hui yang
+博罗,bo luo
+惠东,hui dong
+龙门,long men
+梅州,mei zhou
+梅江,mei jiang
+梅县,mei xian
+大埔,da bu
+丰顺,feng shun
+五华,wu hua
+平远,ping yuan
+蕉岭,jiao ling
+兴宁,xing ning
+汕尾,shan wei
+城,cheng
+海丰,hai feng
+陆河,lu he
+陆丰,lu feng
+河源,he yuan
+源城,yuan cheng
+紫金,zi jin
+龙川,long chuan
+连平,lian ping
+和平,he ping
+东源,dong yuan
+阳江,yang jiang
+江城,jiang cheng
+阳东,yang dong
+阳西,yang xi
+阳春,yang chun
+清远,qing yuan
+清城,qing cheng
+清新,qing xin
+佛冈,fo gang
+阳山,yang shan
+连山,lian shan
+连南,lian nan
+英德,ying de
+连州,lian zhou
+东莞,dong guan
+中山,zhong shan
+潮州,chao zhou
+湘桥,xiang qiao
+潮安,chao an
+饶平,rao ping
+揭阳,jie yang
+榕城,rong cheng
+揭东,jie dong
+揭西,jie xi
+惠来,hui lai
+普宁,pu ning
+云浮,yun fu
+云城,yun cheng
+云安,yun an
+新兴,xin xing
+郁南,yu nan
+罗定,luo ding
+汕头,shan tou
+金平,jin ping
+龙湖,long hu
+澄海,cheng hai
+濠江,hao jiang
+潮阳,chao yang
+潮南,chao nan
+南澳,nan ao
+广西,guang xi
+南宁,nan ning
+柳州,liu zhou
+桂林,gui lin
+梧州,wu zhou
+北海,bei hai
+防城港,fang cheng gang
+钦州,qin zhou
+贵港,gui gang
+玉林,yu lin
+百色,bai se
+贺州,he zhou
+河池,he chi
+来宾,lai bin
+崇左,chong zuo
+兴宁,xing ning
+青秀,qing xiu
+江南,jiang nan
+西乡塘,xi xiang tang
+良庆,liang qing
+邕宁,yong ning
+武鸣,wu ming
+隆安,long an
+马山,ma shan
+上林,shang lin
+宾阳,bin yang
+横州,heng zhou
+城中,cheng zhong
+鱼峰,yu feng
+柳南,liu nan
+柳北,liu bei
+柳江,liu jiang
+柳城,liu cheng
+鹿寨,lu zhai
+融安,rong an
+融水,rong shui
+三江,san jiang
+秀峰,xiu feng
+叠彩,die cai
+象山,xiang shan
+七星,qi xing
+雁山,yan shan
+临桂,lin gui
+阳朔,yang shuo
+灵川,ling chuan
+全州,quan zhou
+兴安,xing an
+永福,yong fu
+灌阳,guan yang
+龙胜,long sheng
+资源,zi yuan
+平乐,ping le
+恭城,gong cheng
+荔浦,li pu
+万秀,wan xiu
+长洲,chang zhou
+龙圩,long xu
+苍梧,cang wu
+藤,teng
+蒙山,meng shan
+岑溪,cen xi
+海城,hai cheng
+银海,yin hai
+铁山港,tie shan gang
+合浦,he pu
+港口,gang kou
+防城,fang cheng
+上思,shang si
+东兴,dong xing
+钦南,qin nan
+钦北,qin bei
+灵山,ling shan
+浦北,pu bei
+港北,gang bei
+港南,gang nan
+覃塘,qin tang
+平南,ping nan
+桂平,gui ping
+玉州,yu zhou
+福绵,fu mian
+容,rong
+陆川,lu chuan
+博白,bo bai
+兴业,xing ye
+北流,bei liu
+右江,you jiang
+田阳,tian yang
+田东,tian dong
+德保,de bao
+那坡,na po
+凌云,ling yun
+乐业,le ye
+田林,tian lin
+西林,xi lin
+隆林,long lin
+靖西,jing xi
+平果,ping guo
+八步,ba bu
+平桂,ping gui
+昭平,zhao ping
+钟山,zhong shan
+富川,fu chuan
+金城江,jin cheng jiang
+宜州,yi zhou
+南丹,nan dan
+天峨,tian e
+凤山,feng shan
+东兰,dong lan
+罗城,luo cheng
+环江,huan jiang
+巴马,ba ma
+都安,du an
+大化,da hua
+兴宾,xing bin
+忻城,xin cheng
+象州,xiang zhou
+武宣,wu xuan
+金秀,jin xiu
+合山,he shan
+江州,jiang zhou
+扶绥,fu sui
+宁明,ning ming
+龙州,long zhou
+大新,da xin
+天等,tian deng
+凭祥,ping xiang
+海南,hai nan
+海口,hai kou
+三亚,san ya
+三沙,san sha
+儋州,dan zhou
+秀英,xiu ying
+龙华,long hua
+琼山,qiong shan
+美兰,mei lan
+海棠,hai tang
+吉阳,ji yang
+天涯,tian ya
+崖州,ya zhou
+西沙,xi sha
+南沙,nan sha
+五指山,wu zhi shan
+琼海,qiong hai
+文昌,wen chang
+万宁,wan ning
+东方,dong fang
+定安,ding an
+屯昌,tun chang
+澄迈,cheng mai
+临高,lin gao
+白沙,bai sha
+昌江,chang jiang
+乐东,le dong
+陵水,ling shui
+保亭,bao ting
+琼中,qiong zhong
+重庆,chong qing
+万州,wan zhou
+涪陵,fu ling
+渝中,yu zhong
+大渡口,da du kou
+沙坪坝,sha ping ba
+九龙坡,jiu long po
+南岸,nan an
+北碚,bei bei
+綦江,qi jiang
+大足,da zu
+巴南,ba nan
+黔江,qian jiang
+长寿,chang shou
+江津,jiang jin
+合川,he chuan
+永川,yong chuan
+南川,nan chuan
+璧山,bi shan
+铜梁,tong liang
+潼南,tong nan
+荣昌,rong chang
+开州,kai zhou
+梁平,liang ping
+武隆,wu long
+两江新,liang jiang xin
+城口,cheng kou
+丰都,feng du
+垫江,dian jiang
+忠,zhong
+云阳,yun yang
+奉节,feng jie
+巫山,wu shan
+巫溪,wu xi
+石柱,shi zhu
+秀山,xiu shan
+酉阳,you yang
+彭水,peng shui
+四川,si chuan
+成都,cheng du
+自贡,zi gong
+攀枝花,pan zhi hua
+泸州,lu zhou
+德阳,de yang
+绵阳,mian yang
+广元,guang yuan
+遂宁,sui ning
+内江,nei jiang
+乐山,le shan
+南充,nan chong
+眉山,mei shan
+宜宾,yi bin
+广安,guang an
+达州,da zhou
+雅安,ya an
+巴中,ba zhong
+资阳,zi yang
+阿坝,a ba
+甘孜,gan zi
+凉山,liang shan
+锦江,jin jiang
+青羊,qing yang
+金牛,jin niu
+武侯,wu hou
+成华,cheng hua
+龙泉驿,long quan yi
+青白江,qing bai jiang
+新都,xin du
+温江,wen jiang
+双流,shuang liu
+郫都,pi du
+新津,xin jin
+金堂,jin tang
+大邑,da yi
+蒲江,pu jiang
+都江堰,du jiang yan
+彭州,peng zhou
+邛崃,qiong lai
+崇州,chong zhou
+简阳,jian yang
+自流井,zi liu jing
+贡井,gong jing
+大安,da an
+沿滩,yan tan
+荣,rong
+富顺,fu shun
+东,dong
+西,xi
+仁和,ren he
+米易,mi yi
+盐边,yan bian
+江阳,jiang yang
+纳溪,na xi
+龙马潭,long ma tan
+泸,lu
+合江,he jiang
+叙永,xu yong
+古蔺,gu lin
+旌阳,jing yang
+罗江,luo jiang
+中江,zhong jiang
+广汉,guang han
+什邡,shi fang
+绵竹,mian zhu
+涪城,fu cheng
+游仙,you xian
+安州,an zhou
+三台,san tai
+盐亭,yan ting
+梓潼,zi tong
+北川,bei chuan
+平武,ping wu
+江油,jiang you
+利州,li zhou
+昭化,zhao hua
+朝天,chao tian
+旺苍,wang cang
+青川,qing chuan
+剑阁,jian ge
+苍溪,cang xi
+船山,chuan shan
+安居,an ju
+蓬溪,peng xi
+大英,da ying
+射洪,she hong
+市中,shi zhong
+东兴,dong xing
+威远,wei yuan
+资中,zi zhong
+隆昌,long chang
+市中,shi zhong
+沙湾,sha wan
+五通桥,wu tong qiao
+金口河,jin kou he
+犍为,qian wei
+井研,jing yan
+夹江,jia jiang
+沐川,mu chuan
+峨边,e bian
+马边,ma bian
+峨眉山,e mei shan
+顺庆,shun qing
+高坪,gao ping
+嘉陵,jia ling
+南部,nan bu
+营山,ying shan
+蓬安,peng an
+仪陇,yi long
+西充,xi chong
+阆中,lang zhong
+东坡,dong po
+彭山,peng shan
+仁寿,ren shou
+洪雅,hong ya
+丹棱,dan ling
+青神,qing shen
+翠屏,cui ping
+南溪,nan xi
+叙州,xu zhou
+江安,jiang an
+长宁,chang ning
+高,gao
+珙,gong
+筠连,jun lian
+兴文,xing wen
+屏山,ping shan
+广安,guang an
+前锋,qian feng
+岳池,yue chi
+武胜,wu sheng
+邻水,lin shui
+华蓥,hua ying
+通川,tong chuan
+达川,da chuan
+宣汉,xuan han
+开江,kai jiang
+大竹,da zhu
+渠,qu
+万源,wan yuan
+雨城,yu cheng
+名山,ming shan
+荥经,ying jing
+汉源,han yuan
+石棉,shi mian
+天全,tian quan
+芦山,lu shan
+宝兴,bao xing
+巴州,ba zhou
+恩阳,en yang
+通江,tong jiang
+南江,nan jiang
+平昌,ping chang
+雁江,yan jiang
+安岳,an yue
+乐至,le zhi
+马尔康,ma er kang
+汶川,wen chuan
+理,li
+茂,mao
+松潘,song pan
+九寨沟,jiu zhai gou
+金川,jin chuan
+小金,xiao jin
+黑水,hei shui
+壤塘,rang tang
+阿坝,a ba
+若尔盖,ruo er gai
+红原,hong yuan
+康定,kang ding
+泸定,lu ding
+丹巴,dan ba
+九龙,jiu long
+雅江,ya jiang
+道孚,dao fu
+炉霍,lu huo
+甘孜,gan zi
+新龙,xin long
+德格,de ge
+白玉,bai yu
+石渠,shi qu
+色达,se da
+理塘,li tang
+巴塘,ba tang
+乡城,xiang cheng
+稻城,dao cheng
+得荣,de rong
+西昌,xi chang
+会理,hui li
+木里,mu li
+盐源,yan yuan
+德昌,de chang
+会东,hui dong
+宁南,ning nan
+普格,pu ge
+布拖,bu tuo
+金阳,jin yang
+昭觉,zhao jue
+喜德,xi de
+冕宁,mian ning
+越西,yue xi
+甘洛,gan luo
+美姑,mei gu
+雷波,lei bo
+贵州,gui zhou
+贵阳,gui yang
+南明,nan ming
+云岩,yun yan
+花溪,hua xi
+乌当,wu dang
+白云,bai yun
+观山湖,guan shan hu
+开阳,kai yang
+息烽,xi feng
+修文,xiu wen
+清镇,qing zhen
+六盘水,liu pan shui
+钟山,zhong shan
+六枝,liu zhi
+水城,shui cheng
+盘州,pan zhou
+遵义,zun yi
+红花岗,hong hua gang
+汇川,hui chuan
+播州,bo zhou
+桐梓,tong zi
+绥阳,sui yang
+正安,zheng an
+道真,dao zhen
+务川,wu chuan
+凤冈,feng gang
+湄潭,mei tan
+余庆,yu qing
+习水,xi shui
+赤水,chi shui
+仁怀,ren huai
+安顺,an shun
+西秀,xi xiu
+平坝,ping ba
+普定,pu ding
+镇宁,zhen ning
+关岭,guan ling
+紫云,zi yun
+毕节,bi jie
+七星关,qi xing guan
+大方,da fang
+金沙,jin sha
+织金,zhi jin
+纳雍,na yong
+威宁,wei ning
+赫章,he zhang
+黔西,qian xi
+铜仁,tong ren
+碧江,bi jiang
+万山,wan shan
+江口,jiang kou
+玉屏,yu ping
+石阡,shi qian
+思南,si nan
+印江,yin jiang
+德江,de jiang
+沿河,yan he
+松桃,song tao
+黔西南,qian xi nan
+兴义,xing yi
+兴仁,xing ren
+普安,pu an
+晴隆,qing long
+贞丰,zhen feng
+望谟,wang mo
+册亨,ce heng
+安龙,an long
+黔南,qian nan
+都匀,du yun
+福泉,fu quan
+荔波,li bo
+贵定,gui ding
+瓮安,weng an
+独山,du shan
+平塘,ping tang
+罗甸,luo dian
+长顺,chang shun
+龙里,long li
+惠水,hui shui
+三都,san du
+黔东南,qian dong nan
+凯里,kai li
+
+黄平,huang ping
+
+施秉,shi bing
+
+三穗,san sui
+
+镇远,zhen yuan
+
+岑巩,cen gong
+
+天柱,tian zhu
+
+锦屏,jin ping
+
+剑河,jian he
+
+台江,tai jiang
+
+黎平,li ping
+
+榕江,rong jiang
+
+从江,cong jiang
+
+雷山,lei shan
+
+麻江,ma jiang
+
+丹寨,dan zhai
+云南,yun nan
+昆明,kun ming
+曲靖,qu jing
+玉溪,yu xi
+保山,bao shan
+昭通,zhao tong
+丽江,li jiang
+普洱,pu er
+临沧,lin cang
+楚雄,chu xiong
+文山,wen shan
+西双版纳,xi shuang ban na
+大理,da li
+德宏,de hong
+怒江,nu jiang
+迪庆,di qing
+五华,wu hua
+盘龙,pan long
+官渡,guan du
+西山,xi shan
+东川,dong chuan
+呈贡,cheng gong
+晋宁,jin ning
+富民,fu min
+宜良,yi liang
+石林,shi lin
+嵩明,song ming
+禄劝,lu quan
+寻甸,xun dian
+安宁,an ning
+麒麟,qi lin
+沾益,zhan yi
+马龙,ma long
+陆良,lu liang
+师宗,shi zong
+罗平,luo ping
+富源,fu yuan
+会泽,hui ze
+宣威,xuan wei
+红塔,hong ta
+江川,jiang chuan
+通海,tong hai
+华宁,hua ning
+易门,yi men
+峨山,e shan
+新平,xin ping
+元江,yuan jiang
+澄江,cheng jiang
+隆阳,long yang
+施甸,shi dian
+龙陵,long ling
+昌宁,chang ning
+腾冲,teng chong
+昭阳,zhao yang
+鲁甸,lu dian
+巧家,qiao jia
+盐津,yan jin
+大关,da guan
+永善,yong shan
+绥江,sui jiang
+镇雄,zhen xiong
+彝良,yi liang
+威信,wei xin
+水富,shui fu
+古城,gu cheng
+玉龙,yu long
+永胜,yong sheng
+华坪,hua ping
+宁蒗,ning lang
+思茅,si mao
+宁洱,ning er
+墨江,mo jiang
+景东,jing dong
+景谷,jing gu
+镇沅,zhen yuan
+江城,jiang cheng
+孟连,meng lian
+澜沧,lan cang
+西盟,xi meng
+临翔,lin xiang
+凤庆,feng qing
+云,yun
+永德,yong de
+镇康,zhen kang
+双江,shuang jiang
+耿马,geng ma
+沧源,cang yuan
+楚雄,chu xiong
+禄丰,lu feng
+双柏,shuang bai
+牟定,mou ding
+南华,nan hua
+姚安,yao an
+大姚,da yao
+永仁,yong ren
+元谋,yuan mou
+武定,wu ding
+文山,wen shan
+砚山,yan shan
+西畴,xi chou
+麻栗坡,ma li po
+马关,ma guan
+丘北,qiu bei
+广南,guang nan
+富宁,fu ning
+景洪,jing hong
+勐海,meng hai
+勐腊,meng la
+大理,da li
+漾濞,yang bi
+祥云,xiang yun
+宾川,bin chuan
+弥渡,mi du
+南涧,nan jian
+巍山,wei shan
+永平,yong ping
+云龙,yun long
+洱源,er yuan
+剑川,jian chuan
+鹤庆,he qing
+瑞丽,rui li
+芒,mang
+梁河,liang he
+盈江,ying jiang
+陇川,long chuan
+泸水,lu shui
+福贡,fu gong
+贡山,gong shan
+兰坪,lan ping
+香格里拉,xiang ge li la
+德钦,de qin
+维西,wei xi
+红河,hong he
+蒙自,meng zi
+个旧,ge jiu
+开远,kai yuan
+弥勒,mi le
+建水,jian shui
+石屏,shi ping
+泸西,lu xi
+原阳,yuan yang
+红河,hong he
+绿春,lv chun
+金平,jin ping
+屏边,ping bian
+河口,he kou
+西藏,xi zang
+拉萨,la sa
+日喀则,ri ka ze
+昌都,chang du
+林芝,lin zhi
+山南,shan nan
+那曲,na qu
+阿里,a li
+城关,cheng guan
+堆龙德庆,dui long de qing
+达孜,da zi
+林周,lin zhou
+当雄,dang xiong
+尼木,ni mu
+曲水,qu shui
+墨竹工卡,mo zhu gong ka
+桑珠孜,sang zhu zi
+南木林,nan mu lin
+江孜,jiang zi
+定日,ding ri
+萨迦,sa jia
+拉孜,la zi
+昂仁,ang ren
+谢通门,xie tong men
+白朗,bai lang
+仁布,ren bu
+康马,kang ma
+定结,ding jie
+仲巴,zhong ba
+亚东,ya dong
+吉隆,ji long
+聂拉木,nie la mu
+萨嘎,sa ga
+岗巴,gang ba
+卡若,ka ruo
+江达,jiang da
+贡觉,gong jue
+类乌齐,lei wu qi
+丁青,ding qing
+察雅,cha ya
+八宿,ba su
+左贡,zuo gong
+芒康,mang kang
+洛隆,luo long
+边坝,bian ba
+巴宜,ba yi
+工布江达,gong bu jiang da
+墨脱,mo tuo
+波密,bo mi
+察隅,cha yu
+朗,lang
+米林,mi lin
+乃东,nai dong
+扎囊,zha nang
+贡嘎,gong ga
+桑日,sang ri
+琼结,qiong jie
+曲松,qu song
+措美,cuo mei
+洛扎,luo zha
+加查,jia cha
+隆子,long zi
+浪卡子,lang ka zi
+错那,cuo na
+色尼,se ni
+嘉黎,jia li
+比如,bi ru
+聂荣,nie rong
+安多,an duo
+申扎,shen zha
+索,suo
+班戈,ban ge
+巴青,ba qing
+尼玛,ni ma
+双湖,shuang hu
+普兰,pu lan
+札达,zha da
+噶尔,ga er
+日土,ri tu
+革吉,ge ji
+改则,gai ze
+措勤,cuo qin
+陕西,shan xi
+西安,xi an
+铜川,tong chuan
+宝鸡,bao ji
+咸阳,xian yang
+渭南,wei nan
+延安,yan an
+汉中,han zhong
+榆林,yu lin
+安康,an kang
+商洛,shang luo
+新城,xin cheng
+碑林,bei lin
+莲湖,lian hu
+灞桥,ba qiao
+未央,wei yang
+雁塔,yan ta
+阎良,yan liang
+临潼,lin tong
+长安,chang an
+高陵,gao ling
+鄠邑,hu yi
+蓝田,lan tian
+周至,zhou zhi
+王益,wang yi
+印台,yin tai
+耀州,yao zhou
+宜君,yi jun
+渭滨,wei bin
+金台,jin tai
+陈仓,chen cang
+凤翔,feng xiang
+岐山,qi shan
+扶风,fu feng
+眉,mei
+陇,long
+千阳,qian yang
+麟游,lin you
+凤,feng
+太白,tai bai
+秦都,qin du
+杨陵,yang ling
+渭城,wei cheng
+三原,san yuan
+泾阳,jing yang
+乾,qian
+礼泉,li quan
+永寿,yong shou
+长武,chang wu
+旬邑,xun yi
+淳化,chun hua
+武功,wu gong
+兴平,xing ping
+彬州,bin zhou
+临渭,lin wei
+华州,hua zhou
+潼关,tong guan
+大荔,da li
+合阳,he yang
+澄城,cheng cheng
+蒲城,pu cheng
+白水,bai shui
+富平,fu ping
+韩城,han cheng
+华阴,hua yin
+宝塔,bao ta
+安塞,an sai
+延长,yan chang
+延川,yan chuan
+志丹,zhi dan
+吴起,wu qi
+甘泉,gan quan
+富,fu
+洛川,luo chuan
+宜川,yi chuan
+黄龙,huang long
+黄陵,huang ling
+子长,zi chang
+汉台,han tai
+南郑,nan zheng
+城固,cheng gu
+洋,yang
+西乡,xi xiang
+勉,mian
+宁强,ning qiang
+略阳,lve yang
+镇巴,zhen ba
+留坝,liu ba
+佛坪,fo ping
+榆阳,yu yang
+横山,heng shan
+府谷,fu gu
+靖边,jing bian
+定边,ding bian
+绥德,sui de
+米脂,mi zhi
+佳,jia
+吴堡,wu bu
+清涧,qing jian
+子洲,zi zhou
+神木,shen mu
+汉滨,han bin
+汉阴,han yin
+石泉,shi quan
+宁陕,ning shan
+紫阳,zi yang
+岚皋,lan gao
+平利,ping li
+镇坪,zhen ping
+白河,bai he
+旬阳,xun yang
+商州,shang zhou
+洛南,luo nan
+丹凤,dan feng
+商南,shang nan
+山阳,shan yang
+镇安,zhen an
+柞水,zha shui
+甘肃,gan su
+兰州,lan zhou
+嘉峪关,jia yu guan
+金昌,jin chang
+白银,bai yin
+天水,tian shui
+武威,wu wei
+张掖,zhang ye
+平凉,ping liang
+酒泉,jiu quan
+庆阳,qing yang
+定西,ding xi
+陇南,long nan
+临夏,lin xia
+甘南,gan nan
+城关,cheng guan
+七里河,qi li he
+西固,xi gu
+安宁,an ning
+红古,hong gu
+永登,yong deng
+皋兰,gao lan
+榆中,yu zhong
+金川,jin chuan
+永昌,yong chang
+白银,bai yin
+平川,ping chuan
+靖远,jing yuan
+会宁,hui ning
+景泰,jing tai
+秦州,qin zhou
+麦积,mai ji
+清水,qing shui
+秦安,qin an
+甘谷,gan gu
+武山,wu shan
+张家川,zhang jia chuan
+凉州,liang zhou
+民勤,min qin
+古浪,gu lang
+天祝,tian zhu
+甘州,gan zhou
+肃南,su nan
+民乐,min le
+临泽,lin ze
+高台,gao tai
+山丹,shan dan
+崆峒,kong tong
+泾川,jing chuan
+灵台,ling tai
+崇信,chong xin
+庄浪,zhuang lang
+静宁,jing ning
+华亭,hua ting
+肃州,su zhou
+金塔,jin ta
+瓜州,gua zhou
+肃北,su bei
+阿克塞,a ke sai
+玉门,yu men
+敦煌,dun huang
+西峰,xi feng
+庆城,qing cheng
+环,huan
+华池,hua chi
+合水,he shui
+正宁,zheng ning
+宁,ning
+镇原,zhen yuan
+安定,an ding
+通渭,tong wei
+陇西,long xi
+渭源,wei yuan
+临洮,lin tao
+漳,zhang
+岷,min
+武都,wu du
+成,cheng
+文,wen
+宕昌,tan chang
+康,kang
+西和,xi he
+礼,li
+徽,hui
+两当,liang dang
+临夏,lin xia
+康乐,kang le
+永靖,yong jing
+广河,guang he
+和政,he zheng
+东乡,dong xiang
+积石山,ji shi shan
+合作,he zuo
+临潭,lin tan
+卓尼,zhuo ni
+舟曲,zhou qu
+迭部,die bu
+玛曲,ma qu
+碌曲,lu qu
+夏河,xia he
+青海,qing hai
+西宁,xi ning
+海东,hai dong
+海北,hai bei
+黄南,huang nan
+海南,hai nan
+果洛,guo luo
+玉树,yu shu
+海西,hai xi
+城东,cheng dong
+城中,cheng zhong
+城西,cheng xi
+城北,cheng bei
+湟中,huang zhong
+大通,da tong
+湟源,huang yuan
+乐都,le du
+平安,ping an
+民和,min he
+互助,hu zhu
+化隆,hua long
+循化,xun hua
+门源,men yuan
+祁连,qi lian
+海晏,hai yan
+刚察,gang cha
+同仁,tong ren
+尖扎,jian zha
+泽库,ze ku
+河南,he nan
+共和,gong he
+同德,tong de
+贵德,gui de
+兴海,xing hai
+贵南,gui nan
+玛沁,ma qin
+班玛,ban ma
+甘德,gan de
+达日,da ri
+久治,jiu zhi
+玛多,ma duo
+玉树,yu shu
+杂多,za duo
+称多,cheng duo
+治多,zhi duo
+囊谦,nang qian
+曲麻莱,qu ma lai
+格尔木,ge er mu
+德令哈,de ling ha
+茫崖,mang ya
+乌兰,wu lan
+都兰,du lan
+天峻,tian jun
+宁夏,ning xia
+银川,yin chuan
+石嘴山,shi zui shan
+吴忠,wu zhong
+固原,gu yuan
+中卫,zhong wei
+兴庆,xing qing
+西夏,xi xia
+金凤,jin feng
+永宁,yong ning
+贺兰,he lan
+灵武,ling wu
+大武口,da wu kou
+惠农,hui nong
+平罗,ping luo
+利通,li tong
+红寺堡,hong si bu
+盐池,yan chi
+同心,tong xin
+青铜峡,qing tong xia
+原州,yuan zhou
+西吉,xi ji
+隆德,long de
+泾源,jing yuan
+彭阳,peng yang
+沙坡头,sha po tou
+中宁,zhong ning
+海原,hai yuan
+新疆,xin jiang
+乌鲁木齐,wu lu mu qi
+克拉玛依,ke la ma yi
+吐鲁番,tu lu fan
+哈密,ha mi
+阿克苏,a ke su
+喀什,ka shi
+和田,he tian
+塔城,ta cheng
+阿勒泰,a le tai
+昌吉,chang ji
+博尔塔拉,bo er ta la
+巴音郭楞,ba yin guo leng
+克孜勒苏,ke zi le su
+伊犁,yi li
+天山,tian shan
+沙依巴克,sha yi ba ke
+新市,xin shi
+水磨沟,shui mo gou
+头屯河,tou tun he
+达坂城,da ban cheng
+米东,mi dong
+乌鲁木齐,wu lu mu qi
+独山子,du shan zi
+克拉玛依,ke la ma yi
+白碱滩,bai jian tan
+乌尔禾,wu er he
+高昌,gao chang
+鄯善,shan shan
+托克逊,tuo ke xun
+伊州,yi zhou
+巴里坤,ba li kun
+伊吾,yi wu
+昌吉,chang ji
+阜康,fu kang
+呼图壁,hu tu bi
+玛纳斯,ma na si
+奇台,qi tai
+吉木萨尔,ji mu sa er
+木垒,mu lei
+博乐,bo le
+阿拉山口,a la shan kou
+精河,jing he
+温泉,wen quan
+库尔勒,ku er le
+轮台,lun tai
+尉犁,yu li
+若羌,ruo qiang
+且末,qie mo
+焉耆,yan qi
+和静,he jing
+和硕,he shuo
+博湖,bo hu
+阿克苏,a ke su
+库车,ku che
+温宿,wen su
+沙雅,sha ya
+新和,xin he
+拜城,bai cheng
+乌什,wu shi
+阿瓦提,a wa ti
+柯坪,ke ping
+阿图什,a tu shi
+阿克陶,a ke tao
+阿合奇,a he qi
+乌恰,wu qia
+喀什,ka shi
+疏附,shu fu
+疏勒,shu le
+英吉沙,ying ji sha
+泽普,ze pu
+莎车,sha che
+叶城,ye cheng
+麦盖提,mai gai ti
+岳普湖,yue pu hu
+伽师,ga shi
+巴楚,ba chu
+塔什库尔干,ta shi ku er gan
+和田,he tian
+和田,he tian
+墨玉,mo yu
+皮山,pi shan
+洛浦,luo pu
+策勒,ce le
+于田,yu tian
+民丰,min feng
+和安,he an
+和康,he kang
+伊宁,yi ning
+奎屯,kui tun
+霍尔果斯,huo er guo si
+伊宁,yi ning
+察布查尔,cha bu cha er
+霍城,huo cheng
+巩留,gong liu
+新源,xin yuan
+昭苏,zhao su
+特克斯,te ke si
+尼勒克,ni le ke
+塔城,ta cheng
+乌苏,wu su
+沙湾,sha wan
+额敏,e min
+托里,tuo li
+裕民,yu min
+和布克赛尔,he bu ke sai er
+岑岭,cen ling
+阿勒泰,a le tai
+布尔津,bu er jin
+富蕴,fu yun
+福海,fu hai
+哈巴河,ha ba he
+青河,qing he
+吉木乃,ji mu nai
+石河子,shi he zi
+阿拉尔,a la er
+图木舒克,tu mu shu ke
+五家渠,wu jia qu
+北屯,bei tun
+铁门关,tie men guan
+双河,shuang he
+可克达拉,ke ke da la
+昆玉,kun yu
+胡杨河,hu yang he
+新星,xin xing
+白杨,bai yang
+草湖,cao hu
+香港,xiang gang
+澳门,ao men
+台湾,tai wan
+台北,tai bei
+高雄,gao xiong
+台南,tai nan
+台中,tai zhong
+桃园,tao yuan
+新北,xin bei
+基隆,ji long
+新竹,xin zhu
+嘉义,jia yi
+新竹,xin zhu
+苗栗,miao li
+彰化,zhang hua
+南投,nan tou
+云林,yun lin
+嘉义,jia yi
+屏东,ping dong
+宜兰,yi lan
+花莲,hua lian
+台东,tai dong
+澎湖,peng hu`;
+
+        // ============================================================
+        // ===== 在这里粘贴您的题库 =====
+        // 格式：第一行是地区名称，后面每行是 地名,拼音
+        // 示例：
+        // 华北
+        // 北京,bei jing
+        // 天津,tian jin
+        // 石家庄,shi jia zhuang
+        // ============================================================
+
+
+        // ============================================================
+        // 以下代码无需修改
+        // ============================================================
+
+        // ---------- 解析题库 ----------
+        function parseTextToDB(text) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            const result = [];
+            let region = '全国';
+            let startIdx = 0;
+
+            if (lines.length > 0) {
+                const firstLine = lines[0].trim();
+                // 判断第一行是否为地区标签（不包含逗号，且是中文或英文）
+                if (!firstLine.includes(',') && /^[\u4e00-\u9fa5a-zA-Z]+$/.test(firstLine)) {
+                    region = firstLine;
+                    startIdx = 1;
+                }
+            }
+
+            for (let i = startIdx; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const parts = line.split(',').map(s => s.trim());
+                if (parts.length >= 2) {
+                    const name = parts[0];
+                    const pinyin = parts[1].toLowerCase().replace(/\s+/g, ' ').trim();
+                    if (name && pinyin) result.push({ name, pinyin });
+                }
+            }
+            return { data: result, region: region };
+        }
+
+        // ---------- 游戏状态 ----------
+        let fullDB = [];
+        let currentQuestions = [];
+        let revealedMap = new Map();
+        let permanentRevealMap = new Map();
+        let isCorrectMap = new Map();
+        let correctTimeMap = new Map();
+        let timerInterval = null;
+        let seconds = 0;
+        let isPaused = false;
+        let gameActive = false;
+        let currentRegion = '全国';
+
+        // DOM 引用
+        const fileInput = document.getElementById('fileInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const regionLabel = document.getElementById('regionLabel');
+        const loadDefaultBtn = document.getElementById('loadDefaultBtn');
+        const autoLoadBtn = document.getElementById('autoLoadBtn');
+        const questionCountInput = document.getElementById('questionCount');
+        const restartBtn = document.getElementById('restartBtn');
+        const resetRevealBtn = document.getElementById('resetRevealBtn');
+        const resetAllBtn = document.getElementById('resetAllBtn');
+        const quitBtn = document.getElementById('quitBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const gameMessage = document.getElementById('gameMessage');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const globalLettersDiv = document.getElementById('globalLetters');
+
+        // ---------- 辅助函数 ----------
+        function formatTime(sec) {
+            const m = String(Math.floor(sec / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function formatTimeChinese(sec) {
+            if (!sec || sec < 0) return '0秒';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            if (m > 0 && s > 0) return `${m}分${s}秒`;
+            if (m > 0) return `${m}分`;
+            return `${s}秒`;
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function startTimer() {
+            stopTimer();
+            seconds = 0;
+            timerDisplay.textContent = formatTime(0);
+            isPaused = false;
+            timerDisplay.classList.remove('paused');
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    seconds++;
+                    timerDisplay.textContent = formatTime(seconds);
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            stopTimer();
+            seconds = 0;
+            timerDisplay.textContent = formatTime(0);
+            isPaused = false;
+            timerDisplay.classList.remove('paused');
+        }
+
+        function togglePause() {
+            if (!gameActive) return;
+            isPaused = !isPaused;
+            timerDisplay.classList.toggle('paused', isPaused);
+            gameMessage.textContent = isPaused ? '⏸️ 计时暂停' : '▶️ 计时继续';
+        }
+
+        function resetAllReveals() {
+            revealedMap.clear();
+            renderGlobalLetters();
+            renderAllQuestions();
+            gameMessage.textContent = '🔄 字母已重置（已答对的保留）';
+        }
+
+        // ---------- 渲染 26 个字母 ----------
+        function renderGlobalLetters() {
+            const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            let html = '';
+            for (let letter of letters) {
+                const isRevealed = revealedMap.get(letter) === true;
+                let cls = 'global-letter';
+                if (isRevealed) cls += ' active';
+                html += `<button class="${cls}" data-letter="${letter}">${letter.toUpperCase()}</button>`;
+            }
+            globalLettersDiv.innerHTML = html;
+
+            document.querySelectorAll('.global-letter').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const letter = this.dataset.letter;
+                    const current = revealedMap.get(letter) || false;
+                    revealedMap.set(letter, !current);
+                    renderGlobalLetters();
+                    renderAllQuestions();
+                    gameMessage.textContent = `🔤 字母 ${letter.toUpperCase()} ${!current ? '已揭示' : '已隐藏'}`;
+                });
+            });
+        }
+
+        function isLetterRevealedForQuestion(letter, idx) {
+            if (isCorrectMap.get(idx) === true) return true;
+            if (revealedMap.get(letter) === true) return true;
+            const permMap = permanentRevealMap.get(idx);
+            if (permMap && permMap.get(letter) === true) return true;
+            return false;
+        }
+
+        function renderPinyinHorizontal(pinyin, idx) {
+            if (!pinyin) return '<span>暂无</span>';
+            let html = '';
+            const chars = pinyin.split('');
+            let i = 0;
+            while (i < chars.length) {
+                const ch = chars[i];
+                if (ch === ' ') {
+                    html += '<span class="space-char"></span>';
+                    i++;
+                } else {
+                    const lower = ch.toLowerCase();
+                    const revealed = isLetterRevealedForQuestion(lower, idx);
+                    const cls = revealed ? 'char revealed' : 'char hidden';
+                    html += `<span class="${cls}">${revealed ? ch : '*'}</span>`;
+                    i++;
+                }
+            }
+            return html;
+        }
+
+        function renderAllQuestions() {
+            if (!currentQuestions.length) {
+                questionsContainer.innerHTML = `<div style="text-align:center; padding:40px; color:#3a6379;">暂无题目，请点击「再来一局」</div>`;
+                return;
+            }
+            let html = '';
+            currentQuestions.forEach((q, idx) => {
+                const isCorrect = isCorrectMap.get(idx) === true;
+                const pinyinHtml = renderPinyinHorizontal(q.pinyin, idx);
+                const statusText = isCorrect ? '✅ 已答对' : '⏳ 待答题';
+                const statusClass = isCorrect ? 'badge-correct' : '';
+                const rowClass = isCorrect ? 'question-row correct' : 'question-row';
+                const answerDisplay = isCorrect ? `<span class="answer-display correct-answer">📖 ${q.name}</span>` : '';
+                const timeDisplay = isCorrect && correctTimeMap.has(idx) ?
+                    `<span class="time-display">⏱ ${formatTime(correctTimeMap.get(idx))}</span>` : '';
+
+                html += `
+                    <div class="${rowClass}" id="row-${idx}">
+                        <span class="index-label">#${idx+1}</span>
+                        <div class="pinyin-horizontal">${pinyinHtml}</div>
+                        <div class="answer-section">
+                            <input type="text" id="input-${idx}" placeholder="输入地名" autocomplete="off" ${isCorrect ? 'disabled' : ''}>
+                            <button data-idx="${idx}" class="check-btn" ${isCorrect ? 'disabled' : ''}>判断</button>
+                            ${answerDisplay}
+                            ${timeDisplay}
+                        </div>
+                        <div class="status-badge ${statusClass}" id="status-${idx}">${statusText}</div>
+                    </div>
+                `;
+            });
+            questionsContainer.innerHTML = html;
+
+            document.querySelectorAll('.check-btn:not([disabled])').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const idx = parseInt(this.dataset.idx, 10);
+                    handleCheck(idx);
+                });
+            });
+            document.querySelectorAll('.question-row input:not([disabled])').forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const row = this.closest('.question-row');
+                        const btn = row.querySelector('.check-btn:not([disabled])');
+                        if (btn) btn.click();
+                    }
+                });
+            });
+        }
+
+        // ---------- 判断逻辑 ----------
+        function handleCheck(idx) {
+            if (idx < 0 || idx >= currentQuestions.length) return;
+            if (isCorrectMap.get(idx) === true) {
+                gameMessage.textContent = '⏳ 本题已答对';
+                return;
+            }
+            const q = currentQuestions[idx];
+            const inputField = document.getElementById(`input-${idx}`);
+            const statusBadge = document.getElementById(`status-${idx}`);
+            if (!inputField || !statusBadge) return;
+
+            const val = inputField.value.trim();
+            if (val === '') {
+                gameMessage.textContent = '📝 请输入地名';
+                return;
+            }
+
+            const normalizedInput = val.replace(/\s+/g, '');
+            const normalizedName = q.name.replace(/\s+/g, '');
+            if (normalizedInput === normalizedName) {
+                isCorrectMap.set(idx, true);
+                correctTimeMap.set(idx, seconds);
+                const permMap = new Map();
+                const letters = q.pinyin.replace(/ /g, '').split('');
+                letters.forEach(ch => permMap.set(ch.toLowerCase(), true));
+                permanentRevealMap.set(idx, permMap);
+
+                statusBadge.textContent = '✅ 已答对';
+                statusBadge.className = 'status-badge badge-correct';
+                gameMessage.textContent = `🎉 第 ${idx+1} 题正确！答案是 ${q.name}`;
+                inputField.disabled = true;
+                const btn = document.querySelector(`#row-${idx} .check-btn`);
+                if (btn) btn.disabled = true;
+                const row = document.querySelector(`#row-${idx}`);
+                if (row) row.classList.add('correct');
+
+                renderAllQuestions();
+
+                const total = currentQuestions.length;
+                let correctCount = 0;
+                for (let i = 0; i < total; i++) {
+                    if (isCorrectMap.get(i) === true) correctCount++;
+                }
+                if (correctCount === total) {
+                    showSummary('🎉 全部答对！');
+                }
+            } else {
+                statusBadge.textContent = '❌ 错误';
+                statusBadge.className = 'status-badge badge-wrong';
+                gameMessage.textContent = `❌ “${val}” 不正确`;
+                setTimeout(() => {
+                    if (!isCorrectMap.get(idx)) {
+                        statusBadge.textContent = '⏳ 待答题';
+                        statusBadge.className = 'status-badge';
+                    }
+                }, 1800);
+            }
+        }
+
+        // ---------- 结算面板 ----------
+        function showSummary(title = '📊 结算报告') {
+            stopTimer();
+            gameActive = false;
+
+            const total = currentQuestions.length;
+            let correctCount = 0;
+            let totalTime = 0;
+            let detailRows = '';
+
+            for (let i = 0; i < total; i++) {
+                const q = currentQuestions[i];
+                const isCorrect = isCorrectMap.get(i) === true;
+                const time = correctTimeMap.get(i) || 0;
+                if (isCorrect) {
+                    correctCount++;
+                    totalTime += time;
+                }
+                const statusText = isCorrect ? '✅ 正确' : '❌ 未答/错误';
+                const rowClass = isCorrect ? 'correct-row' : 'wrong-row';
+                const timeStr = isCorrect ? formatTime(time) : '—';
+                detailRows += `
+                    <tr class="${rowClass}">
+                        <td>#${i+1}</td>
+                        <td>${q.name}</td>
+                        <td>${q.pinyin}</td>
+                        <td>${statusText}</td>
+                        <td>${timeStr}</td>
+                    </tr>
+                `;
+            }
+
+            let avgTimeDisplay = '—';
+            if (correctCount > 0 && seconds > 0) {
+                const avgSeconds = seconds / correctCount;
+                avgTimeDisplay = formatTimeChinese(avgSeconds) + '/题';
+            }
+
+            const totalStr = formatTime(seconds);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'summary-overlay';
+            overlay.id = 'summaryOverlay';
+            overlay.innerHTML = `
+                <div class="summary-panel">
+                    <h2>${title}</h2>
+                    <div class="summary-stats">
+                        <div class="stat-item"><span class="label">总耗时</span><span class="value">${totalStr}</span></div>
+                        <div class="stat-item"><span class="label">答对 / 总数</span><span class="value">${correctCount} / ${total}</span></div>
+                        <div class="stat-item"><span class="label">平均用时</span><span class="value">${avgTimeDisplay}</span></div>
+                        <div class="stat-item"><span class="label">正确率</span><span class="value">${total > 0 ? Math.round(correctCount/total*100) : 0}%</span></div>
+                        <div class="stat-item" style="grid-column:1/-1;"><span class="label">当前地区</span><span class="value">${currentRegion}</span></div>
+                    </div>
+                    <table class="summary-detail-table">
+                        <thead>
+                            <tr><th>#</th><th>地名</th><th>拼音</th><th>状态</th><th>用时</th></tr>
+                        </thead>
+                        <tbody>${detailRows}</tbody>
+                    </table>
+                    <div class="summary-buttons">
+                        <button class="btn-success" onclick="window.restartGame()">🔁 再来一局</button>
+                        <button class="btn-secondary" onclick="window.closeSummary()">关闭</button>
+                    </div>
+                    <div class="summary-close">
+                        <button onclick="window.closeSummary()">✕ 关闭</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            window.restartGame = function() {
+                closeSummary();
+                restartGame();
+            };
+            window.closeSummary = function() {
+                const el = document.getElementById('summaryOverlay');
+                if (el) el.remove();
+                if (gameActive) {
+                    startTimer();
+                }
+            };
+        }
+
+        // ---------- 核心：再来一局 ----------
+        function restartGame() {
+            if (fullDB.length === 0) {
+                gameMessage.textContent = '⚠️ 题库为空，请导入';
+                return;
+            }
+            let count = parseInt(questionCountInput.value, 10);
+            if (isNaN(count) || count < 1) count = 1;
+            if (count > fullDB.length) count = fullDB.length;
+
+            const shuffled = [...fullDB];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            currentQuestions = shuffled.slice(0, count);
+            revealedMap.clear();
+            permanentRevealMap.clear();
+            isCorrectMap.clear();
+            correctTimeMap.clear();
+            gameActive = true;
+            isPaused = false;
+
+            resetTimer();
+            startTimer();
+
+            renderGlobalLetters();
+            renderAllQuestions();
+            gameMessage.textContent = `🔁 新的一局！共 ${currentQuestions.length} 题，加油！`;
+        }
+
+        // ---------- 放弃功能 ----------
+        function quitGame() {
+            if (!gameActive || currentQuestions.length === 0) {
+                gameMessage.textContent = '⚠️ 没有进行中的游戏';
+                return;
+            }
+            stopTimer();
+            for (let i = 0; i < currentQuestions.length; i++) {
+                if (!isCorrectMap.get(i)) {
+                    const q = currentQuestions[i];
+                    const permMap = new Map();
+                    const letters = q.pinyin.replace(/ /g, '').split('');
+                    letters.forEach(ch => permMap.set(ch.toLowerCase(), true));
+                    permanentRevealMap.set(i, permMap);
+                    isCorrectMap.set(i, false);
+                }
+            }
+            renderAllQuestions();
+            showSummary('🚪 已放弃 · 答案公布');
+        }
+
+        // ---------- 加载数据库 ----------
+        function loadDatabase(dataArray, regionName = '全国') {
+            if (!dataArray || dataArray.length === 0) {
+                fileStatus.textContent = '⚠️ 空数据';
+                return false;
+            }
+            fullDB = dataArray.filter(item => item.name && item.pinyin);
+            if (fullDB.length === 0) {
+                fileStatus.textContent = '⚠️ 无效数据';
+                return false;
+            }
+            currentRegion = regionName;
+            regionLabel.textContent = `📍 当前地区：${currentRegion}`;
+            fileStatus.textContent = `✅ ${fullDB.length} 条`;
+            currentQuestions = [];
+            revealedMap.clear();
+            permanentRevealMap.clear();
+            isCorrectMap.clear();
+            correctTimeMap.clear();
+            gameActive = false;
+            resetTimer();
+            renderGlobalLetters();
+            renderAllQuestions();
+            gameMessage.textContent = `📚 已加载 ${fullDB.length} 个地名（${currentRegion}）`;
+            return true;
+        }
+
+        // ---------- 解析 CSV ----------
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+            const result = [];
+            let region = '全国';
+            let startIdx = 0;
+
+            if (lines.length > 0) {
+                const firstLine = lines[0].trim();
+                if (!firstLine.includes(',') && /^[\u4e00-\u9fa5a-zA-Z]+$/.test(firstLine)) {
+                    region = firstLine;
+                    startIdx = 1;
+                }
+            }
+
+            for (let i = startIdx; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const parts = line.split(',').map(s => s.trim());
+                if (parts.length >= 2) {
+                    const name = parts[0];
+                    const pinyin = parts[1].toLowerCase().replace(/\s+/g, ' ').trim();
+                    if (name && pinyin) result.push({ name, pinyin });
+                }
+            }
+            return { data: result, region: region };
+        }
+
+        // ---------- 初始化嵌入题库 ----------
+        function loadEmbeddedDB() {
+            const result = parseCSV(DEFAULT_DB_TEXT);
+            loadDatabase(result.data, result.region);
+            fileStatus.textContent = `📋 嵌入 (${result.data.length} 条)`;
+            // 保存到 localStorage 以便后续使用
+            saveToLocalStorage(DEFAULT_DB_TEXT);
+        }
+
+        // ---------- 本地存储 ----------
+        function saveToLocalStorage(text) {
+            try {
+                localStorage.setItem('pinyin_game_db', text);
+                localStorage.setItem('pinyin_game_has_db', 'true');
+                return true;
+            } catch(e) {
+                return false;
+            }
+        }
+
+        function loadFromLocalStorage() {
+            const hasDb = localStorage.getItem('pinyin_game_has_db');
+            if (hasDb === 'true') {
+                const text = localStorage.getItem('pinyin_game_db');
+                if (text) {
+                    const result = parseCSV(text);
+                    if (result.data.length > 0) {
+                        loadDatabase(result.data, result.region);
+                        fileStatus.textContent = `📂 自动导入 (${result.data.length} 条)`;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function importAndSave(file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const text = ev.target.result;
+                const result = parseCSV(text);
+                if (result.data.length === 0) {
+                    fileStatus.textContent = '⚠️ 解析失败';
+                    return;
+                }
+                saveToLocalStorage(text);
+                loadDatabase(result.data, result.region);
+                fileStatus.textContent = `📂 ${result.data.length} 条 (已保存)`;
+            };
+            reader.readAsText(file);
+        }
+
+        // ---------- 事件绑定 ----------
+        restartBtn.addEventListener('click', restartGame);
+        resetRevealBtn.addEventListener('click', resetAllReveals);
+        resetAllBtn.addEventListener('click', function() {
+            revealedMap.clear();
+            permanentRevealMap.clear();
+            isCorrectMap.clear();
+            correctTimeMap.clear();
+            gameActive = false;
+            resetTimer();
+            renderGlobalLetters();
+            renderAllQuestions();
+            gameMessage.textContent = '🔄 全部重置';
+        });
+        quitBtn.addEventListener('click', quitGame);
+        timerDisplay.addEventListener('click', togglePause);
+
+        loadDefaultBtn.addEventListener('click', function() {
+            loadEmbeddedDB();
+        });
+
+        fileInput.addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (!file) return;
+            importAndSave(file);
+        });
+
+        autoLoadBtn.addEventListener('click', function() {
+            if (loadFromLocalStorage()) {
+                gameMessage.textContent = '🔄 已从本地存储重新导入题库';
+            } else {
+                fileStatus.textContent = '⚠️ 未找到保存的题库';
+                gameMessage.textContent = '⚠️ 请先导入一个题库文件';
+            }
+        });
+
+        // ---------- 初始化 ----------
+        if (!loadFromLocalStorage()) {
+            loadEmbeddedDB();
+        }
+
+        //setTimeout(() => {
+            //restartGame();
+        //}, 300);
+
+                // 主持人大屏切换
+        document.getElementById('btnHostScreen').addEventListener('click', function() {
+            document.getElementById('openLetterHome').style.display = 'none';
+            document.getElementById('hostScreen').style.display = 'block';
+            document.getElementById('hostIframe').src = 'open-letter-host.html';
+        });
+
+        document.getElementById('btnExitHost').addEventListener('click', function() {
+            document.getElementById('hostIframe').src = 'about:blank';
+            document.getElementById('hostScreen').style.display = 'none';
+            document.getElementById('openLetterHome').style.display = 'flex';
+        });
+
+
+        // ===== 新增：主界面与游戏界面的切换逻辑 =====
+        document.getElementById('btnSinglePlayer').addEventListener('click', function() {
+            document.getElementById('openLetterHome').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            restartGame(); // 点击进入时才开启第一局
+        });
+
+        document.getElementById('homeBtn').addEventListener('click', function() {
+            stopTimer();
+            gameActive = false;
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('openLetterHome').style.display = 'flex';
+        });
+
+        window.restartGame = restartGame;
+        // ==================== 好友对决联机逻辑 ====================
+        let peer = null;
+        let conns = {}; 
+        let isHost = false;
+        let mySlot = 1; // 1为房主/裁判，2+为玩家
+        let battleRoomId = null;
+        let battlePlayers = {}; // { slot: { name: '', muted: false } }
+        let globalMuted = false;
+        let battleQuestions = []; // 游戏进行中的题目
+        let globalRevealedLetters = new Set();
+        let battleChatLog = []; // { type: 'msg'|'sys'|'correct', text }
+        let battleState = 'waiting'; // waiting, playing, finished
+        let currentBattleMode = 'random'; // 'random' 或 'manual'
+        let battleStartTime = 0;
+        let battleTimerInterval = null;
+        const BATTLE_PREFIX = 'dili-openletter-';
+
+        // UI 切换
+        function switchScreen(screenId) {
+            document.getElementById('openLetterHome').style.display = 'none';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('hostScreen').style.display = 'none';
+            document.getElementById('battleScreen').style.display = 'none';
+            
+            if (screenId === 'home') {
+                document.getElementById('openLetterHome').style.display = 'flex';
+            } else if (screenId === 'battle') {
+                document.getElementById('battleScreen').style.display = 'flex';
+            } else {
+                document.getElementById(screenId).style.display = 'block';
+            }
+        }
+
+        document.getElementById('btnExitLobby').addEventListener('click', () => {
+            switchScreen('home');
+        });
+        document.getElementById('btnLeaveRoom').addEventListener('click', () => {
+            cleanupBattle();
+            switchScreen('home');
+        });
+
+        document.getElementById('hostBankSelect').addEventListener('change', function() {
+            const isManual = this.value === 'manual';
+            document.getElementById('hostManualBank').style.display = isManual ? 'block' : 'none';
+            document.getElementById('hostQuestionCountWrapper').style.display = isManual ? 'none' : 'inline-block';
+        });
+
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // 房主创建房间
+        document.getElementById('btnCreateRoom').addEventListener('click', () => {
+            const name = document.getElementById('battleNameInput').value.trim();
+            if (!name) return alert('请输入昵称');
+            if (typeof Peer === 'undefined') return alert('PeerJS 未加载，请刷新页面');
+            
+            cleanupBattle();
+            
+            // ===== 强制彻底清空所有状态与UI =====
+            battleQuestions = [];
+            battlePlayers = {};
+            globalRevealedLetters.clear();
+            battleChatLog = [];
+            battleState = 'waiting';
+            battleStartTime = 0;
+            if (battleTimerInterval) clearInterval(battleTimerInterval);
+            
+            document.getElementById('battleQuestionsList').innerHTML = '';
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('battleResultModal').style.display = 'none';
+            // ======================================
+
+            isHost = true;
+            mySlot = 1;
+            battlePlayers[1] = { name: name, muted: false, score: 0 };
+            battleRoomId = generateRoomId();
+
+            peer = new Peer(BATTLE_PREFIX + battleRoomId, { debug: 1 });
+            
+            peer.on('open', () => {
+                document.getElementById('battleLobby').style.display = 'none';
+                document.getElementById('battleRoomArea').style.display = 'block';
+                document.getElementById('battleRoomIdDisplay').textContent = battleRoomId;
+                document.getElementById('battleRoleDisplay').textContent = '裁判 (房主)';
+                document.getElementById('battleRoleDisplay').style.background = '#fef08a';
+                document.getElementById('hostControls').style.display = 'block';
+                document.getElementById('playerControls').style.display = 'none';
+                document.getElementById('chatInput').disabled = false;
+                document.getElementById('chatInput').placeholder = "裁判可在此发公告...";
+                
+                renderBattlePlayers();
+                addBattleChat('sys', `房主 ${name} 创建了房间，等待玩家加入...`);
+                renderBattleUI();
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    handleClientMessage(conn, data);
+                });
+                conn.on('close', () => {
+                    for (let slot in conns) {
+                        if (conns[slot] === conn) {
+                            const lostName = battlePlayers[slot] ? battlePlayers[slot].name : '未知';
+                            delete battlePlayers[slot];
+                            delete conns[slot];
+                            
+                            const lostMsg = `${lostName} 已断开连接`;
+                            addBattleChat('sys', lostMsg);
+                            broadcastChat({ type: 'chat', chatType: 'sys', text: lostMsg }); // 广播给其他玩家
+                            
+                            renderBattlePlayers();
+                            broadcastState();
+                            break;
+                        }
+                    }
+                });
+            });
+        });
+
+        // 玩家加入房间
+        document.getElementById('btnJoinRoom').addEventListener('click', () => {
+            const name = document.getElementById('battleNameInput').value.trim();
+            const roomId = document.getElementById('battleRoomInput').value.trim().toUpperCase();
+            if (!name) return alert('请输入昵称');
+            if (roomId.length !== 6) return alert('请输入6位房间号');
+            if (typeof Peer === 'undefined') return alert('PeerJS 未加载，请刷新页面');
+
+            cleanupBattle();
+            
+            // ===== 强制彻底清空所有状态与UI =====
+            battleQuestions = [];
+            battlePlayers = {};
+            globalRevealedLetters.clear();
+            battleChatLog = [];
+            battleState = 'waiting';
+            battleStartTime = 0;
+            if (battleTimerInterval) clearInterval(battleTimerInterval);
+            
+            document.getElementById('battleQuestionsList').innerHTML = '';
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('battleResultModal').style.display = 'none';
+            // ======================================
+
+            isHost = false;
+            battleRoomId = roomId;
+
+            peer = new Peer(null, { debug: 1 });
+            peer.on('open', () => {
+                const conn = peer.connect(BATTLE_PREFIX + roomId);
+                conn.on('open', () => {
+                    conn.send({ type: 'join', name: name });
+                    document.getElementById('battleLobby').style.display = 'none';
+                    document.getElementById('battleRoomArea').style.display = 'block';
+                    document.getElementById('battleRoomIdDisplay').textContent = battleRoomId;
+                    document.getElementById('battleRoleDisplay').textContent = '玩家';
+                    document.getElementById('battleRoleDisplay').style.background = '#dbeafe';
+                    document.getElementById('hostControls').style.display = 'none';
+                    document.getElementById('playerControls').style.display = 'block';
+                    
+                    document.getElementById('chatInput').disabled = false;
+                    document.getElementById('chatInput').placeholder = "输入聊天内容...";
+                });
+                conn.on('data', (data) => {
+                    handleHostMessage(data);
+                });
+                conn.on('close', () => {
+                    alert('与房主断开连接');
+                    cleanupBattle();
+                    switchScreen('home');
+                });
+                conns['host'] = conn;
+            });
+            peer.on('error', (err) => {
+                if(err.type === 'peer-unavailable') {
+                    alert('房间不存在或已解散');
+                    cleanupBattle();
+                }
+            });
+        });
+
+        function cleanupBattle() {
+            if (peer) peer.destroy();
+            peer = null;
+            conns = {};
+            isHost = false;
+            battleRoomId = null;
+            battlePlayers = {};
+            globalMuted = false;
+            battleQuestions = [];
+            globalRevealedLetters.clear();
+            battleChatLog = [];
+            battleState = 'waiting';
+            document.getElementById('battleLobby').style.display = 'block';
+            document.getElementById('battleRoomArea').style.display = 'none';
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('btnGlobalMute').textContent = '全体禁言';
+            document.getElementById('btnGlobalMute').style.background = '#f59e0b';
+        }
+
+        // ==================== 消息处理 ====================
+        function handleClientMessage(conn, msg) {
+            if (!isHost) return;
+
+            if (msg.type === 'join') {
+                let freeSlot = 2;
+                while (battlePlayers[freeSlot]) freeSlot++;
+                battlePlayers[freeSlot] = { name: msg.name, muted: false, score: 0 };
+                conns[freeSlot] = conn;
+                conn._slot = freeSlot;
+                
+                const sysMsg = `${msg.name} 加入了房间`;
+                addBattleChat('sys', sysMsg);
+                broadcastChat({ type: 'chat', chatType: 'sys', text: sysMsg }); // 广播给玩家
+                
+                renderBattlePlayers();
+                broadcastState();
+            } else if (msg.type === 'chat') {
+                const player = battlePlayers[msg.slot];
+                if (!player) return;
+                
+                // 检查禁言
+                if (player.muted || globalMuted) {
+                    return; // 被禁言则无视其发送的任何消息
+                }
+                
+                processBattleChat(msg.slot, player.name, msg.text);
+            }
+        }
+
+        function handleHostMessage(msg) {
+            if (msg.type === 'state') {
+                battleState = msg.state.state;
+                battlePlayers = msg.state.players;
+                globalMuted = msg.state.globalMuted || false;
+                battleQuestions = msg.state.questions || [];
+                globalRevealedLetters = new Set(msg.state.revealedLetters || []);
+                battleStartTime = msg.state.startTime || 0;
+                // ===== 新增：接收出题模式 =====
+                if (msg.state.battleMode) {
+                    currentBattleMode = msg.state.battleMode;
+                }
+                
+                // 找到自己的 slot
+                if (mySlot === 1) {
+                    for (let slot in battlePlayers) {
+                        if (battlePlayers[slot].name === document.getElementById('battleNameInput').value.trim()) {
+                            mySlot = parseInt(slot);
+                            break;
+                        }
+                    }
+                }
+
+                renderBattleUI();
+                updateChatInputState();
+            } else if (msg.type === 'chat') {
+                // 如果收到清空指令，清空玩家本地的聊天记录
+                if (msg.action === 'clear') {
+                    battleChatLog = [];
+                    document.getElementById('chatMessages').innerHTML = '';
+                } else {
+                    addBattleChat(msg.chatType, msg.text);
+                }
+            } else if (msg.type === 'kick') {
+                alert('你已被房主踢出房间');
+                cleanupBattle();
+                switchScreen('home');
+            }
+        }
+
+        function updateChatInputState() {
+            const chatInput = document.getElementById('chatInput');
+            if (isHost) return;
+
+            const me = battlePlayers[mySlot];
+            if (me && me.muted) {
+                chatInput.disabled = true;
+                chatInput.placeholder = "你已被裁判禁言";
+            } else if (globalMuted) {
+                chatInput.disabled = true;
+                chatInput.placeholder = "裁判已开启全体禁言";
+            } else {
+                chatInput.disabled = false;
+                chatInput.placeholder = battleState === 'playing' ? "输入地名或 开字母:A" : "输入聊天内容...";
+            }
+        }
+
+        function broadcastState() {
+            if (!isHost) return;
+            renderBattleUI();
+
+            const statePacket = {
+                type: 'state',
+                state: {
+                    state: battleState,
+                    players: battlePlayers,
+                    globalMuted: globalMuted,
+                    questions: battleQuestions,
+                    revealedLetters: Array.from(globalRevealedLetters),
+                    startTime: battleStartTime,
+                    battleMode: currentBattleMode // ===== 新增：同步出题模式 =====
+                }
+            };
+            for (let slot in conns) {
+                if (conns[slot].open) conns[slot].send(statePacket);
+            }
+        }
+
+        // ==================== 游戏流程 ====================
+        document.getElementById('btnStartBattle').addEventListener('click', () => {
+            if (!isHost) return;
+            if (battleState === 'playing') {
+                return alert('游戏已经开始，请勿重复点击');
+            }
+            
+            // ===== 新增：判断房间人数是否满2人 =====
+            const playerCount = Object.keys(battlePlayers).length;
+            if (playerCount < 2) {
+                return alert('房间内至少需要 2 名玩家才能开始游戏哦！请邀请好友加入。');
+            }
+            // ====================================
+            
+            const mode = document.getElementById('hostBankSelect').value;
+            currentBattleMode = mode;
+            let db = [];
+            let region = '全国';
+            let inputCount = 6;
+
+            if (mode === 'manual') {
+                const text = document.getElementById('hostManualBank').value.trim();
+                if (!text) return alert('请输入题库内容');
+                const parsedDict = parseCSV(DEFAULT_DB_TEXT);
+                const pinyinDict = {};
+                parsedDict.data.forEach(item => { pinyinDict[item.name.toLowerCase()] = item.pinyin; });
+
+                const inputNames = text.split(/[\n,，\s]+/).filter(n => n.trim() !== '');
+                const notFound = [];
+                inputNames.forEach(name => {
+                    const cleanName = name.trim();
+                    const lowerName = cleanName.toLowerCase();
+                    if (pinyinDict[lowerName]) db.push({ name: cleanName, pinyin: pinyinDict[lowerName] });
+                    else notFound.push(cleanName);
+                });
+
+                if (notFound.length > 0) return alert(`未找到：\n${notFound.join('、')}`);
+                if (db.length === 0) return alert('未识别到有效的地名');
+                inputCount = db.length;
+            } else {
+                let val = parseInt(document.getElementById('hostQuestionCount').value, 10);
+                if (!isNaN(val) && val > 0) inputCount = val;
+                const parsed = parseCSV(DEFAULT_DB_TEXT);
+                if (parsed.data.length > 0) {
+                    db = parsed.data;
+                    region = parsed.region;
+                    db.sort(() => 0.5 - Math.random());
+                }
+            }
+
+            if (db.length === 0) return alert('题库为空');
+
+            const count = Math.min(inputCount, db.length);
+            
+            battleQuestions = db.slice(0, count).map((q, idx) => ({
+                id: idx,
+                name: q.name,
+                pinyin: q.pinyin,
+                isCorrect: false
+            }));
+            
+            // 重置所有玩家的分数为 0
+            for (let slot in battlePlayers) {
+                battlePlayers[slot].score = 0;
+            }
+
+            globalRevealedLetters.clear();
+            battleState = 'playing';
+            battleChatLog = [];
+            battleStartTime = Date.now(); // 记录开始时间
+            
+            const startMsg = `游戏开始！地区范围：${region}，共 ${count} 题。`;
+            addBattleChat('sys', startMsg);
+            broadcastChat({ type: 'chat', chatType: 'sys', text: startMsg });
+            
+            if (currentBattleMode === 'random') {
+                document.getElementById('chatInput').placeholder = "输入地名或 开字母:A";
+            } else {
+                document.getElementById('chatInput').placeholder = "裁判可在此发公告...";
+            }
+
+            broadcastState();
+        });
+
+        document.getElementById('btnGlobalMute').addEventListener('click', () => {
+            if (!isHost) return;
+            globalMuted = !globalMuted;
+            const btn = document.getElementById('btnGlobalMute');
+            btn.textContent = globalMuted ? '解除全体禁言' : '全体禁言';
+            btn.style.background = globalMuted ? '#10b981' : '#f59e0b';
+            broadcastState();
+        });
+        // ===== 复制房间号功能 =====
+        document.getElementById('btnCopyRoomId').addEventListener('click', () => {
+            if (!battleRoomId) return;
+            const btn = document.getElementById('btnCopyRoomId');
+            
+            function showSuccess() {
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '✅ 已复制';
+                setTimeout(() => btn.innerHTML = oldText, 1500);
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(battleRoomId).then(showSuccess).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const ta = document.createElement('textarea');
+                ta.value = battleRoomId;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    showSuccess();
+                } catch (err) {
+                    alert('复制失败，请手动选中复制');
+                }
+                document.body.removeChild(ta);
+            }
+        });
+
+        // ==================== 聊天与猜题处理 ====================
+        document.getElementById('btnSendChat').addEventListener('click', sendChat);
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChat();
+        });
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+
+            if (isHost) {
+                processBattleChat(1, battlePlayers[1].name, text);
+            } else {
+                conns['host'].send({ type: 'chat', slot: mySlot, text: text });
+            }
+        }
+
+        function processBattleChat(slot, sender, text) {
+            if (!isHost) return;
+
+            const letterMatch = text.match(/^开字母[：:]\s*([a-zA-Z])$/i);
+            if (letterMatch && battleState === 'playing') {
+                if (slot === 1 && currentBattleMode === 'manual') {
+                    addBattleChat('sys', `[裁判公告] ${text}`);
+                    broadcastChat({ type: 'chat', chatType: 'sys', text: `[裁判公告] ${text}` });
+                    return;
+                }
+                
+                const letter = letterMatch[1].toLowerCase();
+                globalRevealedLetters.add(letter);
+                const sysMsg = `${sender} 开启了字母 ${letter.toUpperCase()}`;
+                addBattleChat('sys', sysMsg);
+                broadcastChat({ type: 'chat', chatType: 'sys', text: sysMsg });
+                broadcastState();
+                return;
+            }
+
+            if (battleState === 'playing') {
+                if (slot === 1 && currentBattleMode === 'manual') {
+                    addBattleChat('sys', `[裁判公告] ${text}`);
+                    broadcastChat({ type: 'chat', chatType: 'sys', text: `[裁判公告] ${text}` });
+                    return;
+                }
+
+                const normalizedText = text.replace(/\s+/g, '').toLowerCase();
+                let matched = false;
+
+                for (let q of battleQuestions) {
+                    if (!q.isCorrect && q.name.replace(/\s+/g, '').toLowerCase() === normalizedText) {
+                        q.isCorrect = true;
+                        matched = true;
+                        
+                        // ===== 得分计算核心逻辑 =====
+                        // 1. 计算当前耗时（秒）
+                        let elapsed = Math.floor((Date.now() - battleStartTime) / 1000);
+                        let points = 0;
+                        
+                        // 2. 根据规则计算基础分
+                        if (elapsed <= 180) points = 5;
+                        else if (elapsed <= 300) points = 3;
+                        else if (elapsed <= 600) points = 2;
+                        else if (elapsed <= 900) points = 1;
+                        else points = 0; // 超过15分钟不得分
+
+                        // 3. 判断是否是最后一题
+                        let isLastQuestion = battleQuestions.every(item => item.isCorrect);
+                        if (isLastQuestion) {
+                            points += 2;
+                        }
+
+                        // 4. 加分
+                        if (battlePlayers[slot]) {
+                            battlePlayers[slot].score = (battlePlayers[slot].score || 0) + points;
+                        }
+
+                        const correctMsg = `🎉 ${sender} 猜中了：${q.name}，得 ${points} 分！`;
+                        addBattleChat('correct', correctMsg);
+                        broadcastChat({ type: 'chat', chatType: 'correct', text: correctMsg });
+                        
+                        // 如果是最后一题，结束游戏
+                        if (isLastQuestion) {
+                            battleState = 'finished';
+                            if (battleTimerInterval) clearInterval(battleTimerInterval);
+                            const endMsg = `🏆 游戏结束！所有题目已被猜出。`;
+                            addBattleChat('sys', endMsg);
+                            broadcastChat({ type: 'chat', chatType: 'sys', text: endMsg });
+                        }
+                    }
+                }
+
+                if (matched) {
+                    broadcastState();
+                    return;
+                }
+            }
+
+            addBattleChat('msg', `${sender}: ${text}`);
+            broadcastChat({ type: 'chat', chatType: 'msg', text: `${sender}: ${text}` });
+        }
+
+        function addBattleChat(type, text) {
+            battleChatLog.push({ type, text });
+            if (battleChatLog.length > 100) battleChatLog.shift();
+            
+            const box = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `chat-msg ${type}`;
+            div.textContent = text;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function broadcastChat(chatData) {
+            if (!isHost) return;
+            for (let slot in conns) {
+                if (conns[slot].open) conns[slot].send(chatData);
+            }
+        }
+
+        // ==================== UI 渲染 ====================
+        function renderBattlePlayers() {
+            const list = document.getElementById('battlePlayersList');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            const slots = Object.keys(battlePlayers);
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
+                const p = battlePlayers[slot];
+                if (!p) continue;
+
+                const span = document.createElement('span');
+                span.className = 'player-tag';
+                
+                let nameSpan = document.createElement('span');
+                let displayName = p.name ? p.name : '未命名';
+                
+                // ===== 修复：手动出题模式下，裁判不显示分数 =====
+                let scoreText = '';
+                if (currentBattleMode === 'random' || parseInt(slot) !== 1) {
+                    scoreText = p.score !== undefined ? ` (${p.score}分)` : '';
+                }
+                // ==========================================
+                
+                let roleText = (parseInt(slot) === 1) ? ' (裁判)' : '';
+                
+                nameSpan.textContent = displayName + roleText + scoreText;
+                
+                if (p.muted) {
+                    nameSpan.style.textDecoration = 'line-through';
+                    nameSpan.style.color = '#ef4444';
+                }
+                span.appendChild(nameSpan);
+
+                if (isHost && parseInt(slot) !== 1) {
+                    const muteBtn = document.createElement('button');
+                    muteBtn.className = 'btn-mute';
+                    muteBtn.textContent = p.muted ? '解除' : '禁言';
+                    muteBtn.onclick = () => {
+                        p.muted = !p.muted;
+                        broadcastState();
+                    };
+                    span.appendChild(muteBtn);
+
+                    const kickBtn = document.createElement('button');
+                    kickBtn.className = 'btn-kick';
+                    kickBtn.textContent = '踢出';
+                    kickBtn.onclick = () => {
+                        if (confirm(`确定将 ${displayName} 踢出房间吗？`)) {
+                            if (conns[slot]) {
+                                conns[slot].send({ type: 'kick' });
+                                setTimeout(() => conns[slot].close(), 100);
+                            }
+                        }
+                    };
+                    span.appendChild(kickBtn);
+                }
+                list.appendChild(span);
+            }
+        }
+
+                // ===== 第二步新增：显示结算面板 =====
+        function showBattleResult() {
+            const modal = document.getElementById('battleResultModal');
+            const list = document.getElementById('battleResultList');
+            if (!modal || !list) return;
+
+            let playersArr = [];
+            for (let slot in battlePlayers) {
+                // ===== 修复：手动出题模式下，直接把裁判过滤掉，不加入排行榜 =====
+                if (currentBattleMode === 'manual' && parseInt(slot) === 1) {
+                    continue;
+                }
+                // ==================================================================
+
+                playersArr.push({
+                    slot: parseInt(slot),
+                    name: battlePlayers[slot].name,
+                    score: battlePlayers[slot].score || 0
+                });
+            }
+            // 按分数降序排列
+            playersArr.sort((a, b) => b.score - a.score);
+
+            let html = '';
+            if (playersArr.length === 0) {
+                html = '<div style="text-align:center;color:#999;padding:20px;">暂无玩家得分</div>';
+            } else {
+                playersArr.forEach((p, index) => {
+                    let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : '👤'));
+                    let isMe = (p.slot === mySlot);
+                    let bgColor = isMe ? '#e0e7ff' : 'transparent';
+                    let textColor = isMe ? '#4f46e5' : '#333';
+                    
+                    html += `<div style="display: flex; justify-content: space-between; padding: 8px 12px; background: ${bgColor}; border-radius: 6px; margin-bottom: 8px; color: ${textColor}; font-weight: ${isMe ? 'bold' : 'normal'};">
+                                <span>${medal} ${p.name} ${isMe ? '(你)' : ''}</span>
+                                <span style="color: #4f46e5; font-weight: bold;">${p.score} 分</span>
+                             </div>`;
+                });
+            }
+            list.innerHTML = html;
+
+            // 按钮状态调整
+            const playAgainBtn = document.getElementById('btnPlayAgain');
+            const waitHostText = document.getElementById('waitHostText');
+            if (isHost) {
+                playAgainBtn.style.display = 'block';
+                playAgainBtn.textContent = '🔄 再来一局 (重置)';
+                waitHostText.style.display = 'none';
+            } else {
+                playAgainBtn.style.display = 'none';
+                waitHostText.style.display = 'block'; // 玩家端显示等待提示
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        // 绑定结算弹窗的按钮
+        document.getElementById('btnPlayAgain').addEventListener('click', () => {
+            if (!isHost) return;
+            
+            // 关闭弹窗，重置状态为等待
+            document.getElementById('battleResultModal').style.display = 'none';
+            battleState = 'waiting';
+            
+            // 清理游戏数据
+            battleQuestions = [];
+            globalRevealedLetters.clear();
+            battleStartTime = 0;
+            stopBattleTimer();
+            
+            // 重置所有玩家分数
+            for (let slot in battlePlayers) {
+                battlePlayers[slot].score = 0;
+            }
+            
+            // 1. 清空房主本地聊天记录
+            battleChatLog = [];
+            document.getElementById('chatMessages').innerHTML = '';
+            
+            // 2. 广播“清空聊天”指令给所有玩家
+            broadcastChat({ type: 'chat', action: 'clear' });
+            
+            // 3. 发送并广播重置提示语
+            const resetMsg = '房主已重置游戏，请选择模式并点击“开始游戏”。';
+            addBattleChat('sys', resetMsg);
+            broadcastChat({ type: 'chat', chatType: 'sys', text: resetMsg });
+            
+            // 恢复房主输入框提示
+            document.getElementById('chatInput').placeholder = "裁判可在此发公告...";
+            
+            broadcastState();
+        });
+
+        document.getElementById('btnLeaveAfterResult').addEventListener('click', () => {
+            document.getElementById('battleResultModal').style.display = 'none';
+            cleanupBattle();
+            switchScreen('home');
+        });
+        // ===== 第二步新增结束 =====
+        
+                // ===== 独立的计时器控制逻辑 =====
+        function startBattleTimer() {
+            const timerDisplay = document.getElementById('battleTimerDisplay');
+            if (!timerDisplay) return;
+            
+            timerDisplay.style.display = 'inline';
+            
+            // 如果已经有定时器在跑，先清除，防止叠加
+            if (battleTimerInterval) clearInterval(battleTimerInterval);
+            
+            function updateTimerUI() {
+                // 如果状态不是游戏中，或者时间无效，就停止
+                if (battleState !== 'playing' || battleStartTime <= 0) {
+                    stopBattleTimer();
+                    return;
+                }
+                let diff = Math.floor((Date.now() - battleStartTime) / 1000);
+                let m = String(Math.floor(diff / 60)).padStart(2, '0');
+                let s = String(diff % 60).padStart(2, '0');
+                timerDisplay.textContent = `⏱ ${m}:${s}`;
+            }
+            
+            updateTimerUI(); // 立即执行一次，避免第一秒空白
+            battleTimerInterval = setInterval(updateTimerUI, 1000);
+        }
+
+        function stopBattleTimer() {
+            const timerDisplay = document.getElementById('battleTimerDisplay');
+            if (timerDisplay) timerDisplay.style.display = 'none';
+            if (battleTimerInterval) {
+                clearInterval(battleTimerInterval);
+                battleTimerInterval = null;
+            }
+        }
+
+        function renderBattleUI() {
+            renderBattlePlayers();
+            const qList = document.getElementById('battleQuestionsList');
+            qList.innerHTML = '';
+
+            battleQuestions.forEach(q => {
+                let html = '';
+                const chars = q.pinyin.split('');
+                chars.forEach(ch => {
+                    if (ch === ' ') {
+                        html += '&nbsp;&nbsp;';
+                    } else {
+                        const isRev = q.isCorrect || globalRevealedLetters.has(ch.toLowerCase());
+                        if (isRev) {
+                            html += `<span style="color:#10b981; background:#dcfce7; padding:0 2px; border-radius:4px;">${ch}</span>`;
+                        } else {
+                            html += '*';
+                        }
+                    }
+                });
+
+                const item = document.createElement('div');
+                item.className = `bq-item ${q.isCorrect ? 'correct' : ''}`;
+                item.innerHTML = `
+                    <div>#${q.id + 1}. ${html}</div>
+                    <div>${q.isCorrect ? `<span style="color:#10b981; font-size:14px;">✅ ${q.name}</span>` : ''}</div>
+                `;
+                qList.appendChild(item);
+            });
+
+            const box = document.getElementById('chatMessages');
+            if (box.childElementCount === 0 && battleChatLog.length > 0) {
+                battleChatLog.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = `chat-msg ${c.type}`;
+                    div.textContent = c.text;
+                    box.appendChild(div);
+                });
+                box.scrollTop = box.scrollHeight;
+            }
+
+            // ===== 自动控制结算面板的弹出与关闭 =====
+            if (battleState === 'finished') {
+                showBattleResult();
+            } else {
+                const modal = document.getElementById('battleResultModal');
+                if (modal) modal.style.display = 'none';
+            }
+
+            // ===== 统一控制计时器 =====
+            if (battleState === 'playing' && battleStartTime > 0) {
+                startBattleTimer();
+            } else {
+                stopBattleTimer();
+            }
+        }
+
+        // 绑定主界面的“好友对决”按钮
+        document.getElementById('btnBattleMode').addEventListener('click', function() {
+            switchScreen('battle');
+        });
+    })();
+</script>
+</body>
+</html>

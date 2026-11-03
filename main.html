@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>地理游戏站 · 玩转地名</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, Arial, sans-serif;
+    background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%);
+    color: #1f2937;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .site-header {
+    text-align: center;
+    padding: 48px 20px 24px;
+  }
+  .site-header h1 {
+    font-size: 36px;
+    color: #2b4c8c;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-shadow: 0 2px 10px rgba(74,108,247,0.15);
+  }
+  .site-header p {
+    margin-top: 12px;
+    color: #5b6b82;
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+  .game-grid {
+    flex: 1;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    align-content: start;
+  }
+  .game-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 26px 22px;
+    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.08);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid rgba(74, 108, 247, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  .game-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(74,108,247,0.04), rgba(16,185,129,0.04));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .game-card:hover::after { opacity: 1; }
+  .game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(30, 58, 95, 0.14);
+  }
+  .game-card:active { transform: translateY(-1px) scale(0.99); }
+  .game-card .icon {
+    font-size: 40px;
+    line-height: 1;
+  }
+  .game-card h3 {
+    font-size: 19px;
+    color: #2b4c8c;
+    font-weight: 700;
+  }
+  .game-card .desc {
+    font-size: 13px;
+    color: #6b7a90;
+    line-height: 1.6;
+    flex: 1;
+  }
+  .game-card .tag {
+    align-self: flex-start;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: #eef3ff;
+    color: #4a6cf7;
+    font-weight: 600;
+  }
+  .game-card.disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    filter: grayscale(0.3);
+  }
+  .game-card.disabled:hover {
+    transform: none;
+    box-shadow: 0 6px 20px rgba(30, 58, 95, 0.08);
+  }
+  .game-card.disabled .tag {
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+  .site-footer {
+    text-align: center;
+    padding: 24px 20px 32px;
+    font-size: 12px;
+    color: #9aa7b8;
+    letter-spacing: 1px;
+  }
+
+  /* ===== 游戏浮层 ===== */
+  #gameOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #f9fafc;
+    display: none;
+  }
+  #gameOverlay.active { display: block; }
+  #gameFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #f9fafc;
+  }
+  #exitGameBtn {
+    position: fixed;
+    right: 18px;
+    bottom: 70px;
+    z-index: 10000;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(43, 76, 140, 0.92);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(43,76,140,0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.2s ease;
+    backdrop-filter: blur(4px);
+  }
+  #exitGameBtn:hover { background: rgba(43, 76, 140, 1); transform: scale(1.06); }
+  #exitGameBtn:active { transform: scale(0.94); }
+
+  @media (max-width: 600px) {
+    .site-header { padding: 36px 16px 16px; }
+    .site-header h1 { font-size: 26px; }
+    .site-header p { font-size: 13px; }
+    .game-grid { padding: 14px; gap: 14px; grid-template-columns: 1fr 1fr; }
+    .game-card { padding: 18px 14px; border-radius: 14px; }
+    .game-card .icon { font-size: 30px; }
+    .game-card h3 { font-size: 15px; }
+    .game-card .desc { font-size: 12px; }
+    #exitGameBtn { right: 12px; bottom: 64px; width: 46px; height: 46px; font-size: 20px; }
+  }
+  @media (max-width: 380px) {
+    .game-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>🌍 地理游戏站</h1>
+    <p>以名为媒 · 玩转山河</p>
+  </header>
+
+  <main class="game-grid" id="gameGrid">
+    <!-- 1. 开字母猜地名 -->
+  <div class="game-card" data-game="open-letter" data-src="open-letter.html">
+      <div class="icon">🔤</div>
+      <h3>开字母猜地名</h3>
+      <div class="desc">逐字母揭示地名，限时作答，越快越准得分越高。</div>
+      <span class="tag">已上线</span>
+    </div>
+
+    <!-- 2. 看地图猜县级/地名对应（这里接入你的看图猜区县） -->
+    <div class="game-card" data-game="guess-district" data-src="guess-district/index.html">
+      <div class="icon">🗺️</div>
+      <h3>看地图猜县级</h3>
+      <div class="desc">根据区县轮廓猜地名，支持简单/中等/困难/经典/每日挑战/好友对决。</div>
+      <span class="tag">已上线</span>
+    </div>
+
+    <!-- 3. 城市合成 -->
+    <div class="game-card" data-game="city-synthesis" data-src="city-synthesis.html">
+      <div class="icon">🧩</div>
+      <h3>城市合成</h3>
+      <div class="desc">从出题开始，使用加减法合成县级行政区和地级行政区，每个地名只能出现一次（上一个算式结果可接为下一个算式计算，仅此）。若再也无法接出任何地名，视为终结。</div>
+      <span class="tag">已上线</span>
+    </div>
+
+    <!-- 4. 数字炸弹 -->
+    <div class="game-card" data-game="number-bomb" data-src="number-bomb.html">
+      <div class="icon">💣</div>
+      <h3>数字炸弹</h3>
+      <div class="desc">在 1~10000 之间悄悄埋下一枚炸弹，轮流报数不断收缩范围，谁踩中炸弹或超时挂机就会被淘汰。支持多人联机，存活者平分奖池，胆大心细才能笑到最后。</div>
+      <span class="tag">已上线</span>
+    </div>
+
+    <!-- 5. 孤注一掷 -->
+    <div class="game-card disabled">
+      <div class="icon">🎯</div>
+      <h3>孤注一掷</h3>
+      <div class="desc">限时 10 秒的抢答选择题，高风险高收益，考验你的果断。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 4. 地名天梯 -->
+    <div class="game-card disabled">
+      <div class="icon">🪜</div>
+      <h3>地名天梯</h3>
+      <div class="desc">层层递进的挑战，攀登知识阶梯，解锁每一个角落的故事。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 5. 地名飞花令 -->
+    <div class="game-card disabled">
+      <div class="icon">🌸</div>
+      <h3>地名飞花令</h3>
+      <div class="desc">首尾字接龙，比拼地名储备与反应速度，共赴地理盛宴。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 6. 线索猜地名 -->
+    <div class="game-card disabled">
+      <div class="icon">🧩</div>
+      <h3>线索猜地名</h3>
+      <div class="desc">逐条给出线索，越少线索猜中得分越高，解锁山河密码。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 7. 纠错大师 -->
+    <div class="game-card disabled">
+      <div class="icon">✏️</div>
+      <h3>纠错大师</h3>
+      <div class="desc">发现地名中的错别字并改正，看看谁是真正的纠错大师。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 8. 名扬天下 -->
+    <div class="game-card disabled">
+      <div class="icon">🏆</div>
+      <h3>名扬天下</h3>
+      <div class="desc">在矩阵中选出正确的名字，跨越千年的地理坐标与人文传奇。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+
+    <!-- 9. 地区专辑 -->
+    <div class="game-card disabled">
+      <div class="icon">🎒</div>
+      <h3>地区专辑</h3>
+      <div class="desc">以地区为赛道，集中解锁该地名背后的文化基因与历史密码。</div>
+      <span class="tag">敬请期待</span>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    © 地理游戏站 · 以地名为舟，渡山河万卷
+  </footer>
+
+  <!-- 游戏浮层 -->
+  <div id="gameOverlay">
+    <iframe id="gameFrame" title="游戏" allow="clipboard-write; clipboard-read"></iframe>
+  </div>
+  <button id="exitGameBtn" title="返回主站" aria-label="返回主站">✕</button>
+
+<script>
+(function () {
+  var overlay = document.getElementById('gameOverlay');
+  var frame = document.getElementById('gameFrame');
+  var exitBtn = document.getElementById('exitGameBtn');
+  var grid = document.getElementById('gameGrid');
+
+  function openGame(src) {
+    frame.src = src;
+    overlay.classList.add('active');
+    exitBtn.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeGame() {
+    overlay.classList.remove('active');
+    exitBtn.style.display = 'none';
+    document.body.style.overflow = '';
+    // 延迟清空 iframe，释放资源；下次进入会重新加载
+    setTimeout(function () {
+      if (!overlay.classList.contains('active')) {
+        frame.src = 'about:blank';
+      }
+    }, 200);
+  }
+
+  // 卡片点击
+  grid.addEventListener('click', function (e) {
+    var card = e.target.closest('.game-card');
+    if (!card) return;
+    if (card.classList.contains('disabled')) return;
+    var src = card.getAttribute('data-src');
+    if (!src) return;
+    openGame(src);
+  });
+
+  // 悬浮返回按钮
+  exitBtn.addEventListener('click', closeGame);
+
+  // 监听 iframe 内游戏发来的关闭消息
+  window.addEventListener('message', function (e) {
+    if (e.data === 'close-game') {
+      closeGame();
+    }
+  });
+
+  // ESC 退出（可选）
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) {
+      closeGame();
+    }
+  });
+})();
+</script>
+</body>
+</html>

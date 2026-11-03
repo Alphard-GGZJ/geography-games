@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字炸弹 · 联机版</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: #1e293b; height: 100vh; display: flex; justify-content: center; padding: 15px; }
+        .app { width: 100%; max-width: 900px; background: #ffffff; border-radius: 16px; display: flex; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        /* 左侧：聊天与操作区 */
+        .main-panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; }
+        .header { padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header h2 { font-size: 20px; color: #ef4444; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        button { padding: 8px 16px; border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: #3b82f6; }
+        .btn-danger { background: #ef4444; }
+        .btn-success { background: #10b981; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success:hover { background: #059669; }
+        button:disabled { background: #cbd5e1 !important; cursor: not-allowed; opacity: 0.7; }
+        
+        .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #ffffff; }
+        .msg { padding: 10px 14px; border-radius: 10px; font-size: 15px; line-height: 1.5; max-width: 85%; word-break: break-all; }
+        
+        /* 系统消息：居中 */
+        .msg.sys { background: #f1f5f9; color: #475569; align-self: center; text-align: center; border-radius: 12px; font-size: 13px; max-width: 95%; }
+        .msg.sys.highlight { background: #eff6ff; color: #2563eb; font-weight: bold; border: 1px solid #bfdbfe; }
+        .msg.sys.danger { background: #fef2f2; color: #dc2626; font-weight: bold; border: 1px solid #fecaca; }
+        .msg.sys.success { background: #ecfdf5; color: #059669; font-weight: bold; border: 1px solid #a7f3d0; }
+        
+        /* 玩家消息：自己右侧浅蓝，别人左侧灰底 */
+        .msg.player-me { background: #e0f2fe; color: #0369a1; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: bold; border: 1px solid #bae6fd; }
+        .msg.player-other { background: #f8fafc; color: #1e293b; align-self: flex-start; border: 1px solid #e2e8f0; border-bottom-left-radius: 2px; }
+        
+        .name-tag { color: #64748b; font-size: 12px; margin-right: 6px; font-weight: normal; }
+
+        .input-area { padding: 15px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
+        .timer-bar { height: 6px; background: #e2e8f0; width: 100%; position: relative; overflow: hidden; border-radius: 3px; display: none; margin-bottom: 5px; }
+        .timer-fill { height: 100%; background: #10b981; width: 100%; transition: width 1s linear; }
+        .input-row { display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 16px; outline: none; }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+
+        /* 右侧：玩家列表 */
+        .side-panel { width: 280px; background: #f8fafc; display: flex; flex-direction: column; }
+        .side-header { padding: 15px; background: #f1f5f9; text-align: center; font-weight: bold; color: #475569; border-bottom: 1px solid #e2e8f0; }
+        .player-list { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .player-item { background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; border-left: 4px solid #cbd5e1; }
+        .player-item.active-turn { border-left-color: #3b82f6; background: #eff6ff; font-weight: bold; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
+        .player-item.dead { opacity: 0.5; text-decoration: line-through; }
+        .player-item .score { color: #10b981; font-weight: bold; }
+
+        /* 弹窗 */
+        #roomModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; }
+        .modal-content { background: #ffffff; padding: 25px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .modal-content input { width: 100%; margin-bottom: 15px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="main-panel">
+        <div class="header">
+            <h2>💣 数字炸弹</h2>
+            <div class="header-actions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <!-- 新增：顶部常驻名字框 -->
+                <div style="background:#fff; padding:4px 10px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:12px; color:#64748b;">昵称</span>
+                    <input type="text" id="playerName" value="玩家" style="width:70px; border:none; outline:none; background:transparent; text-align:center; font-size:14px; font-weight:bold; color:#3b82f6;" autocomplete="off">
+                </div>
+                
+                <!-- 新增：全局总分显示 -->
+                <div style="background:#fff; padding:4px 10px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:12px; color:#64748b;">总分</span>
+                    <span id="headerScoreDisplay" style="font-size:14px; font-weight:bold; color:#10b981;">0</span>
+                </div>
+                
+                <button id="btnOpenRoom" class="btn-primary">🌐 联机大厅</button>
+                <div id="roomInfoBadge" style="display:none; font-size:13px; background:#e0f2fe; color:#0284c7; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; transition: 0.2s;" title="点击复制">房间号: <span id="currentRoomId"></span> 📋</div>
+                <button id="btnLeaveRoom" class="btn-danger" style="display:none;">退出</button>
+            </div>
+        </div>
+        
+        <div class="chat-area" id="chatArea"></div>
+
+        <div class="input-area">
+            <div class="timer-bar" id="timerBar"><div class="timer-fill" id="timerFill"></div></div>
+            
+            <div id="joinActionArea" style="display: none; margin-bottom: 5px;">
+                <button id="btnJoinGame" class="btn-success" style="width: 100%; padding: 14px; font-size: 16px;">⚔️ 准备 / 开始游戏</button>
+            </div>
+
+            <div class="input-row" id="guessInputArea" style="display: none;">
+                <input type="text" id="guessInput" placeholder="输入数字报数，或发文字聊天..." autocomplete="off">
+                <button class="btn-primary" id="btnSubmitGuess" style="padding: 0 25px;">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-panel">
+        <div class="side-header">👥 战场人员</div>
+        <div class="player-list" id="playerList"></div>
+    </div>
+</div>
+
+<!-- 联机大厅弹窗 -->
+<div id="roomModal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 15px; color: #1e293b;">🌐 联机大厅</h3>
+        <button id="btnCreateRoom" class="btn-success" style="width: 100%; margin-bottom: 15px; padding: 12px;">创建新房间</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <input type="text" id="inputJoinRoom" placeholder="输入6位房间号" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
+            <button id="btnJoinRoom" class="btn-primary" style="padding: 0 16px;">加入</button>
+        </div>
+        <button id="btnCloseModal" style="width: 100%; padding: 10px; background: #f1f5f9; color: #475569; border-radius: 8px;">关闭</button>
+    </div>
+</div>
+
+<script>
+    // ================= 0. 玩家身份与分数持久化 =================
+    // 获取或生成永久的玩家唯一身份证 (UUID)
+    let myUUID = localStorage.getItem('bomb_player_uuid');
+    if (!myUUID) {
+        myUUID = Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
+        localStorage.setItem('bomb_player_uuid', myUUID);
+    }
+
+    // 读取和保存分数只认身份证，不认名字
+    function getSavedScore() {
+        return Number(localStorage.getItem('bomb_score_' + myUUID) || '0');
+    }
+    function saveScore(score) {
+        localStorage.setItem('bomb_score_' + myUUID, score);
+    }
+
+    // ================= 1. DOM 元素 =================
+    const chatArea = document.getElementById('chatArea');
+    const playerListEl = document.getElementById('playerList');
+    const joinActionArea = document.getElementById('joinActionArea');
+    const guessInputArea = document.getElementById('guessInputArea');
+    const guessInput = document.getElementById('guessInput');
+    const btnSubmitGuess = document.getElementById('btnSubmitGuess');
+    const btnJoinGame = document.getElementById('btnJoinGame');
+    
+    const btnOpenRoom = document.getElementById('btnOpenRoom');
+    const roomModal = document.getElementById('roomModal');
+    const roomInfoBadge = document.getElementById('roomInfoBadge');
+    const currentRoomIdSpan = document.getElementById('currentRoomId');
+    const btnLeaveRoom = document.getElementById('btnLeaveRoom');
+    const playerNameInput = document.getElementById('playerName');
+    
+    // ===== 初始化并持久化玩家昵称 =====
+    let savedName = localStorage.getItem('bomb_player_name');
+    if (!savedName) {
+        savedName = '玩家' + Math.floor(Math.random() * 100); // 初始随机名
+        localStorage.setItem('bomb_player_name', savedName);
+    }
+    playerNameInput.value = savedName;
+
+    // 名字改变时保存
+    playerNameInput.addEventListener('change', () => {
+        let name = playerNameInput.value.trim();
+        if (!name) {
+            name = '玩家' + Math.floor(Math.random() * 100);
+            playerNameInput.value = name;
+        }
+        localStorage.setItem('bomb_player_name', name);
+    });
+
+    // 按回车保存并失焦
+    playerNameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') playerNameInput.blur();
+    });
+    
+    // 初始化显示本地保存的总分
+    const headerScoreDisplay = document.getElementById('headerScoreDisplay');
+    if (headerScoreDisplay) {
+        headerScoreDisplay.textContent = getSavedScore();
+    }
+    
+    const timerBar = document.getElementById('timerBar');
+    const timerFill = document.getElementById('timerFill');
+
+    // ================= 2. 联机核心变量 =================
+    const myPlayerId = Math.random().toString(36).substring(2, 9);
+    let peer = null, hostConn = null, isHost = false, roomId = null;
+    let connections = []; 
+    let myName = '';
+
+    // ================= 3. 游戏状态 =================
+    let gameState = 'waiting'; // waiting, playing, ended
+    let players = []; // [{id, name, score, alive}]
+    let min = 1, max = 10000;
+    let bombNumber = 0;
+    let currentTurnId = null;
+    let pool = 0;
+    let timerInterval = null;
+    let timeLeft = 30;
+
+    // ================= 4. UI 与消息逻辑 =================
+    function addMsg(text, type = 'sys') {
+        const div = document.createElement('div');
+        div.className = `msg ${type}`;
+        div.innerHTML = text;
+        chatArea.appendChild(div);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // 统一广播系统消息（居中）
+    function sysMsg(text, type = 'sys') {
+        if (isHost) addMsg(text, type);
+        broadcastToAll({ type: 'broadcast_msg', text: text, msgType: type, isSys: true });
+    }
+
+    // 统一广播玩家报数消息（带ID用于判断左右）
+    function playerMsg(text, playerId) {
+        let isMe = playerId === myPlayerId;
+        if (isHost) addMsg(text, isMe ? 'player-me' : 'player-other');
+        
+        broadcastToAll({ 
+            type: 'broadcast_msg', 
+            text: text, 
+            isSys: false,
+            senderId: playerId 
+        });
+    }
+
+    function updatePlayerUI() {
+        playerListEl.innerHTML = players.map(p => {
+            let isTurn = (p.id === currentTurnId && gameState === 'playing');
+            let isMe = (p.id === myPlayerId);
+            
+            // 区分状态显示
+            let statusText = '';
+            if (p.isWaiting) statusText = ' (观战中)';
+            else if (!p.alive && gameState === 'playing') statusText = ' (已淘汰)';
+
+            return `<div class="player-item ${isTurn ? 'active-turn' : ''} ${!p.alive && !p.isWaiting ? 'dead' : ''}">
+                <span>${p.name} ${isMe ? '(你)' : ''} ${isTurn ? '🎯' : ''}${statusText}</span>
+                <span class="score">${p.score} 分</span>
+            </div>`;
+        }).join('');
+    }
+
+    function updateUIBasedOnState() {
+        updatePlayerUI();
+        
+        if (gameState !== 'playing') {
+            timerBar.style.display = 'none';
+        }
+
+        // 只要在房间里，输入框就常驻（方便随时聊天）
+        guessInputArea.style.display = 'flex';
+        joinActionArea.style.display = 'none'; // 隐藏准备按钮，避免占位
+
+        if (gameState === 'playing') {
+            if (currentTurnId === myPlayerId) {
+                guessInput.placeholder = `轮到你了！输入 ${min}~${max} 报数，或发文字聊天...`;
+                guessInput.focus();
+            } else {
+                let activeP = players.find(p => p.id === currentTurnId);
+                let activeName = activeP ? activeP.name : '玩家';
+                guessInput.placeholder = `等待 ${activeName} 报数...（可发文字聊天）`;
+            }
+        } else if (gameState === 'waiting') {
+            guessInput.placeholder = `输入文字聊天...（等待开始）`;
+            // 房主的开始按钮单独放到底部输入框上方
+            if (isHost) {
+                joinActionArea.style.display = 'block';
+                btnJoinGame.style.display = 'block';
+                btnJoinGame.innerText = '🚀 开始游戏 (需至少2人)';
+                btnJoinGame.disabled = (players.length < 2);
+            }
+        } else if (gameState === 'ended') {
+            guessInput.placeholder = `结算中...（可发文字聊天）`;
+        }
+    }
+
+    // ================= 5. PeerJS 联机 =================
+    btnOpenRoom.addEventListener('click', () => { roomModal.style.display = 'flex'; });
+    document.getElementById('btnCloseModal').addEventListener('click', () => { roomModal.style.display = 'none'; });
+
+    roomInfoBadge.addEventListener('click', () => {
+        if (!roomId) return;
+        navigator.clipboard.writeText(roomId).then(() => {
+            const original = roomInfoBadge.innerHTML;
+            roomInfoBadge.innerHTML = '✅ 已复制!';
+            roomInfoBadge.style.background = '#dcfce7';
+            roomInfoBadge.style.color = '#166534';
+            setTimeout(() => { roomInfoBadge.innerHTML = original; roomInfoBadge.style.background = ''; roomInfoBadge.style.color = ''; }, 1500);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = roomId;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('房间号已复制：' + roomId);
+        });
+    });
+
+    // 创建房间（房主）
+    document.getElementById('btnCreateRoom').addEventListener('click', () => {
+        if (peer) { try { peer.destroy(); } catch(e){} }
+        playerNameInput.disabled = true; // 锁定名字
+        playerNameInput.style.color = '#94a3b8';
+        myName = playerNameInput.value.trim() || '房主';
+        roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        isHost = true;
+        peer = new Peer('bomb-' + roomId);
+        
+        peer.on('open', () => {
+            roomModal.style.display = 'none';
+            roomInfoBadge.style.display = 'block';
+            btnLeaveRoom.style.display = 'block';
+            btnOpenRoom.style.display = 'none';
+            currentRoomIdSpan.textContent = roomId;
+            
+            // 读取历史分数
+            players = [{ id: myPlayerId, name: myName, score: getSavedScore(), alive: true }];
+            gameState = 'waiting';
+            updateUIBasedOnState();
+            
+            addMsg(`🏠 成功创建房间 <b>${roomId}</b>，等待玩家加入...`, 'sys highlight');
+        });
+
+        peer.on('connection', (conn) => {
+            connections.push(conn);
+            conn.on('data', (data) => handleHostReceive(conn, data));
+            conn.on('close', () => {
+                connections = connections.filter(c => c !== conn);
+                if (conn.playerId) {
+                    let quitter = players.find(p => p.id === conn.playerId);
+                    players = players.filter(p => p.id !== conn.playerId);
+                    broadcastState();
+                    sysMsg(`🚪 <b>${conn.playerName}</b> 离开了房间。`);
+                    checkGameOverCondition(quitter);
+                }
+            });
+        });
+    });
+
+    // 加入房间（玩家）
+    document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        if (peer) { try { peer.destroy(); } catch(e){} }
+        const joinId = document.getElementById('inputJoinRoom').value.trim().toUpperCase();
+        if (joinId.length !== 6) return alert('请输入6位房间号');
+        
+        playerNameInput.disabled = true; // 锁定名字
+        playerNameInput.style.color = '#94a3b8';
+        myName = playerNameInput.value.trim() || '玩家';
+        roomId = joinId;
+        isHost = false;
+        peer = new Peer(null);
+
+        peer.on('open', () => {
+            hostConn = peer.connect('bomb-' + roomId, { reliable: true });
+            hostConn.on('open', () => {
+                roomModal.style.display = 'none';
+                roomInfoBadge.style.display = 'block';
+                btnLeaveRoom.style.display = 'block';
+                btnOpenRoom.style.display = 'none';
+                currentRoomIdSpan.textContent = roomId;
+                
+                // 把本地保存的分数一并带给房主
+                hostConn.send({ type: 'join', id: myPlayerId, name: myName, score: getSavedScore() });
+                addMsg(`🔗 已连接到房间 <b>${roomId}</b>...`, 'sys');
+                
+                guessInputArea.style.display = 'flex';
+                guessInput.placeholder = '⏳ 等待房主开始游戏...';
+                guessInput.disabled = true; // 等待时先禁用输入
+            });
+            hostConn.on('data', (data) => handleClientReceive(data));
+            hostConn.on('close', () => {
+                alert('❌ 与房主断开连接'); window.location.reload();
+            });
+        });
+    });
+
+    btnLeaveRoom.addEventListener('click', () => {
+        if (confirm('确定退出房间吗？')) {
+            playerNameInput.disabled = false;
+            playerNameInput.style.color = '#3b82f6';
+            window.location.reload();
+        }
+    });
+
+    function broadcastToAll(msg) {
+        if (!isHost) return;
+        connections.forEach(conn => { if (conn.open) conn.send(msg); });
+    }
+
+    // ================= 6. 房主处理逻辑 =================
+    function handleHostReceive(conn, data) {
+        if (data.type === 'join') {
+            conn.playerId = data.id;
+            conn.playerName = data.name;
+            
+            if (!players.find(p => p.id === data.id)) {
+                // 如果游戏正在运行或正在结算，标记为观战等待
+                let isWaiting = (gameState === 'playing' || gameState === 'ended');
+                // 使用玩家传来的分数
+                players.push({ id: data.id, name: data.name, score: data.score || 0, alive: !isWaiting, isWaiting: isWaiting });
+            }
+            
+            broadcastState();
+            
+            if (gameState === 'playing' || gameState === 'ended') {
+                sysMsg(`👋 <b>${data.name}</b> 加入了房间，正在观战等待下一轮！`);
+                conn.send({ type: 'broadcast_msg', text: `📢 房主当前正在游戏中，你将作为旁观者等待下一轮开始。`, msgType: 'sys highlight', isSys: true });
+            } else {
+                sysMsg(`👋 <b>${data.name}</b> 加入了战场！`);
+            }
+        }
+        else if (data.type === 'guess') {
+            if (gameState !== 'playing' || data.id !== currentTurnId) return;
+            handleGuess(data.num, data.id, data.name);
+        }
+        else if (data.type === 'chat') {
+            let chatHtml = `<span class="name-tag">[${data.name}]</span> ${data.text}`;
+            addMsg(chatHtml, 'player-other'); // 房主本地看到是左侧
+            broadcastToAll({ type: 'broadcast_msg', text: chatHtml, isSys: false, senderId: data.id });
+        }
+    }
+
+    // 核心判定：报数逻辑
+    function handleGuess(num, playerId, playerName) {
+        stopTimer();
+        
+        // 1. 显示谁报了什么
+        let chatHtml = `<span class="name-tag">[${playerName}]</span> 报 ${num}`;
+        playerMsg(chatHtml, playerId);
+        
+        if (num === bombNumber) {
+            gameOver(playerId, playerName, 'boom');
+            return;
+        }
+
+        // 2. 显示大了还是小了
+        if (num < bombNumber) {
+            min = num + 1;
+            sysMsg(`🔵 <b>${playerName}</b> 报 ${num} → 小了！炸弹在 ${min}~${max}`);
+        } else {
+            max = num - 1;
+            sysMsg(`🔴 <b>${playerName}</b> 报 ${num} → 大了！炸弹在 ${min}~${max}`);
+        }
+
+        if (min === max) {
+            let nextId = getNextTurnId(playerId);
+            let nextPlayer = players.find(p => p.id === nextId);
+            gameOver(nextId, nextPlayer.name, 'range', min);
+            return;
+        }
+
+        // 3. 轮换下一位并提示
+        currentTurnId = getNextTurnId(playerId);
+        broadcastState();
+        startTimer();
+        
+        let nextName = players.find(p=>p.id===currentTurnId).name;
+        sysMsg(`🎯 轮到 <b>${nextName}</b> 出手！当前范围 ${min}~${max}（30秒内发数字）`);
+    }
+
+    function getNextTurnId(currentId) {
+        let idx = players.findIndex(p => p.id === currentId);
+        do {
+            idx = (idx + 1) % players.length;
+        } while (!players[idx].alive);
+        return players[idx].id;
+    }
+
+    function gameOver(loserId, loserName, reason = 'boom', exactBomb = null) {
+        gameState = 'ended';
+        stopTimer();
+        updateUIBasedOnState();
+
+        if (reason === 'timeout') {
+            sysMsg(`💥 <b>${loserName}</b> 因超时挂机被淘汰，游戏结束！`, 'sys danger');
+        } else if (reason === 'range') {
+            sysMsg(`💥 范围只剩 <b>${exactBomb}</b> 一个数，<b>${loserName}</b> 无处可躲，自动引爆！`, 'sys danger');
+        } else if (reason === 'quit') {
+            sysMsg(`💥 玩家退出，人数不足，游戏结束！`, 'sys danger');
+        } else {
+            sysMsg(`💥 轰！！<b>${loserName}</b> 报出 ${bombNumber}，踩中炸弹，游戏结束！`, 'sys danger');
+        }
+
+        const aliveWinners = players.filter(p => p.id !== loserId && p.alive);
+        const reward = aliveWinners.length > 0 ? Math.round(pool / aliveWinners.length) : 0;
+        
+        let endHtml = `💣 <b>${loserName || '退出的玩家'}</b> -10 分<br>💰 存活玩家平分 ${pool} 分奖池，每人 +${reward}<br>`;
+        
+        players.forEach(p => {
+            if (p.id === loserId) p.score -= 10;
+            else if (p.alive) p.score += reward;
+            endHtml += `<br>💰 ${p.name} ${p.score >= 0 ? '+' : ''}${p.score} 分`;
+        });
+
+        sysMsg(endHtml, 'sys success');
+        
+        // 所有人（房主和玩家）都在本地保存自己的最新分数
+        let mySelf = players.find(p => p.id === myPlayerId);
+        if (mySelf) {
+            saveScore(mySelf.score);
+            // 实时更新顶部的总分显示
+            if (headerScoreDisplay) {
+                headerScoreDisplay.textContent = mySelf.score;
+            }
+        }
+
+        broadcastState();
+
+        setTimeout(() => {
+            if (isHost) {
+                gameState = 'waiting';
+                players.forEach(p => { 
+                    p.alive = true; 
+                    p.isWaiting = false; // 解除观战状态，准备下轮参战
+                });
+                currentTurnId = null;
+                broadcastState();
+                sysMsg(`🔄 游戏已重置，房主可再次开始。（观战玩家已加入）`, 'sys highlight');
+            }
+        }, 4000);
+    }
+
+    function checkGameOverCondition(quitter) {
+        if (gameState !== 'playing') return;
+        let alivePlayers = players.filter(p => p.alive);
+        if (alivePlayers.length < 2) {
+            gameOver(quitter ? quitter.id : null, quitter ? quitter.name : "退出的玩家", 'quit');
+            return;
+        }
+
+        if (!players.find(p => p.id === currentTurnId) || !players.find(p => p.id === currentTurnId).alive) {
+            currentTurnId = alivePlayers[0].id;
+            broadcastState();
+            startTimer();
+            sysMsg(`🎯 当前回合玩家已退出，轮到 <b>${alivePlayers[0].name}</b>`);
+        }
+    }
+
+    // ================= 7. 客户端处理逻辑 =================
+    function handleClientReceive(data) {
+        if (data.type === 'kick') { alert(data.msg); window.location.reload(); return; }
+        
+        if (data.type === 'state') {
+            players = data.players;
+            min = data.min;
+            max = data.max;
+            currentTurnId = data.currentTurnId;
+            gameState = data.gameState;
+            pool = data.pool;
+            
+            guessInput.disabled = false; // 收到状态同步，解除输入禁用
+            updateUIBasedOnState();
+        }
+        
+        if (data.type === 'broadcast_msg') {
+            if (data.isSys) {
+                // 系统消息
+                addMsg(data.text, data.msgType);
+            } else {
+                // 玩家消息，自己判断左右
+                let isMe = (data.senderId === myPlayerId);
+                addMsg(data.text, isMe ? 'player-me' : 'player-other');
+            }
+        }
+        
+        if (data.type === 'start_timer') {
+            startClientTimer(data.time);
+        }
+        if (data.type === 'stop_timer') stopTimer();
+    }
+
+    // ================= 8. 倒计时控制 =================
+    function startTimer() {
+        if (!isHost) return;
+        timeLeft = 30;
+        broadcastToAll({ type: 'start_timer', time: timeLeft });
+        
+        timerBar.style.display = 'block';
+        timerFill.style.width = '100%';
+        timerFill.style.background = '#10b981';
+        
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerFill.style.width = `${(timeLeft / 30) * 100}%`;
+            timerFill.style.background = timeLeft <= 10 ? '#ef4444' : '#10b981';
+            
+            if (timeLeft <= 0) {
+                stopTimer();
+                let activeP = players.find(p => p.id === currentTurnId);
+                if (!activeP) return;
+                
+                activeP.alive = false;
+                sysMsg(`⏰ <b>${activeP.name}</b> 超过 30 秒未报数，自动退出战场！`, 'sys danger');
+                broadcastState();
+
+                let alivePlayers = players.filter(p => p.alive);
+                if (alivePlayers.length < 2) {
+                    gameOver(activeP.id, activeP.name, 'timeout');
+                } else {
+                    currentTurnId = getNextTurnId(activeP.id);
+                    broadcastState();
+                    sysMsg(`🎯 轮到 <b>${players.find(p=>p.id===currentTurnId).name}</b> 出手！当前范围 ${min}~${max}（30秒内发数字）`);
+                    startTimer();
+                }
+            }
+        }, 1000);
+    }
+
+    function startClientTimer(initialTime) {
+        timeLeft = initialTime;
+        timerBar.style.display = 'block';
+        timerFill.style.width = `${(timeLeft / 30) * 100}%`;
+        timerFill.style.background = timeLeft <= 10 ? '#ef4444' : '#10b981';
+        
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                return;
+            }
+            timerFill.style.width = `${(timeLeft / 30) * 100}%`;
+            timerFill.style.background = timeLeft <= 10 ? '#ef4444' : '#10b981';
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerBar.style.display = 'none';
+    }
+
+    // ================= 9. 游戏流程控制 =================
+    btnJoinGame.addEventListener('click', () => {
+        if (!isHost || gameState !== 'waiting') return;
+        if (players.length < 2) return alert('至少需要 2 人才能开始！');
+        
+        gameState = 'playing';
+        min = 1; max = 10000;
+        bombNumber = Math.floor(Math.random() * 10000) + 1;
+        pool = 30 + (players.length - 1) * 5;
+        currentTurnId = players[0].id;
+        
+        players.forEach(p => { p.alive = true; });
+        
+        broadcastState();
+        sysMsg(`🧨 <b>数字炸弹已埋下（1~10000 之间）！</b><br>💥 炸弹已锁定。<br>💎 奖池 ${pool} 分：踩雷者 -10，其余平分！`, 'sys highlight');
+        sysMsg(`🎯 轮到 <b>${players[0].name}</b> 出手！当前范围 1~10000（30秒内发数字）`);
+        
+        startTimer();
+    });
+
+    function broadcastState() {
+        updateUIBasedOnState();
+        broadcastToAll({
+            type: 'state',
+            players: players,
+            min: min,
+            max: max,
+            currentTurnId: currentTurnId,
+            gameState: gameState,
+            pool: pool
+        });
+    }
+
+    function submitInput() {
+        const val = guessInput.value.trim();
+        if (!val) return;
+        
+        // 判断是否是纯数字
+        const num = parseInt(val);
+        const isPureNumber = !isNaN(num) && String(num) === val;
+
+        if (isPureNumber && gameState === 'playing') {
+            // 如果是数字且在游戏中
+            if (currentTurnId === myPlayerId) {
+                if (num >= min && num <= max) {
+                    // 合法报数
+                    guessInput.value = '';
+                    if (isHost) {
+                        handleGuess(num, myPlayerId, myName);
+                    } else {
+                        hostConn.send({ type: 'guess', num: num, id: myPlayerId, name: myName });
+                    }
+                    return;
+                } else {
+                    // 数字不在范围，不予理睬（直接清空）
+                    guessInput.value = '';
+                    return;
+                }
+            } else {
+                // 不是本人回合，发了数字，不予理睬（直接清空）
+                guessInput.value = '';
+                return;
+            }
+        }
+
+        // 如果不是纯数字，或者当前不是游戏进行中，当做聊天发送
+        guessInput.value = '';
+        let chatHtml = `<span class="name-tag">[${myName}]</span> ${val}`;
+        
+        if (isHost) {
+            addMsg(chatHtml, 'player-me'); // 房主本地渲染
+            broadcastToAll({ type: 'broadcast_msg', text: chatHtml, isSys: false, senderId: myPlayerId });
+        } else {
+            if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'chat', text: val, id: myPlayerId, name: myName });
+            }
+            // 玩家不要本地渲染，等房主广播回来，这样保证代码绝对一致！
+        }
+    }
+
+    btnSubmitGuess.addEventListener('click', submitInput);
+    guessInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitInput(); });
+</script>
+</body>
+</html>
