@@ -1,0 +1,856 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#homeScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%);
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+}
+
+#homeScreen {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#homeScreen.fade-out {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+}
+
+#transitionOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%);
+    z-index: 999998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+#transitionOverlay.show {
+    opacity: 1;
+}
+
+#homeScreen h1 {
+    font-size: 48px;
+    color: #4a6cf7;
+    text-shadow: 0 2px 10px rgba(74, 108, 247, 0.2);
+    margin: 0;
+}
+
+#homeMenu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 300px;
+}
+
+#homeMenu button {
+    padding: 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+#homeMenu button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+#homeMenu button:active {
+    transform: scale(0.97);
+}
+
+#homeMenu #homeBtnPlay {
+    background: linear-gradient(135deg, #4a6cf7, #6b8aff);
+    color: white;
+}
+
+#homeMenu #homeBtnQuiz {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: white;
+}
+
+#homeMenu #homeBtnDaily {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: white;
+}
+
+#homeMenu #homeBtnMiniGames {
+    background: linear-gradient(135deg, #06b6d4, #22d3ee);
+    color: white;
+}
+
+#homeMenu #homeBtnBattle {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+}
+
+/* 移动端 */
+@media (max-width: 768px) {
+    #homeScreen h1 {
+        font-size: 32px;
+    }
+    #homeMenu {
+        width: 80vw;
+    }
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+
+#map {
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#map.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+#panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    width: 380px;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    scrollbar-gutter: stable;
+}
+
+#panel.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+#panel h3 {
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+#dailyPanel h3 {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+#toggleDailyBtn {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-left: 6px;
+    border-radius: 4px;
+    border: none;
+    background: #ccc;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+#backHomeBtn {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-left: 6px;
+    border-radius: 4px;
+    border: none;
+    background: #e5e7eb;
+    color: black;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+#backHomeBtn:hover {
+    background: #d1d5db;
+}
+
+#toggleDailyBtn:hover {
+    background: #bbb;
+}
+
+#panel button {
+    padding: 6px 10px;
+    margin: 2px;
+    border-radius: 5px;
+    border: none;
+    background: #ccc;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+#panel button.active {
+    background: #4a6cf7;
+    color: white;
+}
+
+#modeSelect {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+#modeSelect button {
+    padding: 6px 10px;
+    font-size: 12px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+#panel input {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#panel select {
+    width: 100%;
+    padding: 6px;
+    margin: 4px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 12px;
+}
+
+.filter-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.filter-group label {
+    font-size: 12px;
+    color: #666;
+    font-weight: bold;
+}
+
+.filter-hint {
+    font-size: 11px;
+    color: #999;
+    padding: 4px 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.filter-hint.show {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.filter-hint.warning {
+    color: #f59e0b;
+    background: #fff7ed;
+    border: 1px solid #fbbf24;
+}
+
+.filter-hint.info {
+    color: #3b82f6;
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+}
+
+.speed-container {
+    margin: 6px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.speed-container label {
+    font-size: 12px;
+    color: #666;
+    font-weight: bold;
+}
+
+.speed-hint {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+    padding: 4px 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    display: none;
+}
+
+.speed-hint.show {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#msg {
+    margin-top: 8px;
+    text-align: center;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+.correct {
+    color: #10b981;
+}
+
+.wrong {
+    color: #ef4444;
+}
+
+#score {
+    text-align: center;
+    margin-top: 5px;
+    color: #666;
+}
+
+#bestScore {
+    text-align: center;
+    margin-top: 2px;
+    color: #f59e0b;
+    font-size: 13px;
+}
+
+#hint {
+    margin-top: 5px;
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#timerDisplay {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    display: none;
+}
+
+@media (max-width: 600px) {
+    #panel {
+        width: calc(100% - 20px);
+        left: 10px;
+        top: 10px;
+        font-size: 13px;
+    }
+
+    #panel button {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
+
+/* ==================== 移动端适配 ==================== */
+@media (max-width: 768px) {
+    #panelContent {
+        display: none;
+    }
+
+    #panel {
+        width: auto;
+        max-width: 90vw;
+        padding: 10px;
+    }
+
+    html, body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+#map {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    z-index: 1;
+}
+
+#panel, #dailyPanel {
+    z-index: 999;
+    position: absolute;
+}
+
+    #togglePanelBtn {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    #panel button {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+        #modeSelect button {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    
+    #panel input {
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    #panel select {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    #submitBtn,
+    #newBtn {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        margin-top: 6px;
+    }
+    .speed-hint {
+    font-size: 10px;
+    padding: 3px 6px;
+}
+
+.speed-container label {
+    font-size: 11px;
+}
+
+.filter-group label {
+    font-size: 11px;
+}
+
+.filter-hint {
+    font-size: 10px;
+    padding: 3px 6px;
+}
+
+}
+
+#dailyPanel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    min-width: 240px;
+}
+
+#dailyPanel h3 {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+#dailyPanel button {
+    padding: 8px 12px;
+    margin: 4px;
+    border-radius: 5px;
+    border: none;
+    background: #4a6cf7;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#dailyPanel input {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#dailyBestDisplay {
+    text-align: center;
+    margin-top: 2px;
+    color: #f59e0b;
+    font-size: 13px;
+}
+
+#dailyShareBtn {
+    background: #10b981;
+}
+
+#dailyImageBtn {
+    background: #8b5cf6;
+}
+
+@media (max-width: 768px) {
+    #dailyPanel {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        min-width: 0;
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    #dailyPanel input {
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    #dailyPanel button {
+        padding: 10px 12px;
+        font-size: 14px;
+        margin: 3px;
+    }
+
+    #dailyShareBtn,
+    #dailyImageBtn,
+    #dailyExitBtn,
+    #dailySubmitBtn {
+        width: 100%;
+        margin-top: 6px;
+    }
+
+        #dailyPanel {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        min-width: 0;
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    #dailyPanel input {
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    #dailyPanel button {
+        padding: 10px 12px;
+        font-size: 14px;
+        margin: 3px;
+    }
+
+    #dailyShareBtn,
+    #dailyImageBtn,
+    #dailyExitBtn,
+    #dailySubmitBtn {
+        width: 100%;
+        margin-top: 6px;
+    }
+
+    #panel button {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    #togglePanelBtn {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+    
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+@keyframes greenFlash {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8); }
+    100% { box-shadow: 0 0 20px 10px rgba(16, 185, 129, 0); }
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.shake {
+    animation: shake 0.35s;
+}
+
+.green-flash {
+    animation: greenFlash 0.6s;
+}
+
+.pop-in {
+    animation: popIn 0.25s ease-out;
+}
+
+#panel button:active,
+#dailyPanel button:active {
+    transform: scale(0.94);
+    transition: transform 0.08s;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+#msg, #dailyMsg {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes scoreBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+.score-bounce {
+    animation: scoreBounce 0.3s;
+}
+
+body {
+    background: linear-gradient(135deg, #dfe9f5 0%, #f9fafc 100%);
+}
+
+#miniGamesPanel {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+    font-size: 14px;
+    min-width: 280px;
+}
+
+#miniGamesPanel h3 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+#miniGamesPanel button {
+    transition: all 0.2s ease;
+}
+
+#miniGamesPanel button:active {
+    transform: scale(0.95);
+}
+
+#battlePanel,
+#battleRoomPanel {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    min-width: 300px;
+}
+
+#battlePanel h3,
+#battleRoomPanel h3 {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+#battleRoomInfo {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #666;
+}
+
+#battleQuestion {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #4a6cf7;
+}
+
+@media (max-width: 768px) {
+    #battlePanel {
+        max-width: 90vw;
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 15px;
+        width: 90vw;
+    }
+    
+    #battleRoomPanel {
+        position: fixed !important;
+        top: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: 90vw;
+        max-height: 30vh;
+        overflow-y: auto;
+        padding: 10px;
+        width: 90vw;
+        border-radius: 10px;
+    }
+}
+
+#battlePanel button {
+    transition: all 0.2s ease;
+}
+
+#battlePanel button:active {
+    transform: scale(0.95);
+}
+
+#battleRoomPanel button {
+    transition: all 0.2s ease;
+}
+
+#battleRoomPanel button:active {
+    transform: scale(0.95);
+}
+
+#battlePanel,
+#battleRoomPanel {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#battlePanel.hide,
+#battleRoomPanel.hide {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+}
+
+#dailyModePopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0;
+    will-change: opacity, transform;
+    transform-origin: center center;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#dailyModePopup.daily-popup-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#watermark {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: rgba(0, 0, 0, 0.3);
+    z-index: 9999999;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+}
+
+#reloadBtn:active {
+    transform: scale(0.94);
+}
+
+#quizPanel {
+    transform-origin: top left;
+}
+
+/* ==================== 全局按钮动效与浅色反馈 ==================== */
+button {
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-1px) scale(1.03);
+    filter: brightness(1.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: scale(0.95);
+    filter: brightness(0.96);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+button:focus-visible {
+    outline: 2px solid #4a6cf7;
+    outline-offset: 2px;
+}
+
+/* 深色/彩色按钮悬停时轻微变浅，浅色按钮悬停时轻微加深，保持整体协调 */
+#panel button:hover,
+#dailyPanel button:hover,
+#miniGamesPanel button:hover,
+#battlePanel button:hover,
+#battleRoomPanel button:hover {
+    filter: brightness(1.12);
+}
+
+/* 首页菜单按钮保留更明显的上浮与阴影 */
+#homeMenu button:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+#homeMenu button:active {
+    transform: scale(0.97);
+}
