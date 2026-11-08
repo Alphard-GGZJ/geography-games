@@ -557,6 +557,12 @@
             
             guessInput.disabled = false; // 收到状态同步，解除输入禁用
             updateUIBasedOnState();
+
+            const me = players.find(p => p.id === myPlayerId);
+            if (me) {
+                saveScore(me.score);
+                if (headerScoreDisplay) headerScoreDisplay.textContent = me.score;
+            }
         }
         
         if (data.type === 'broadcast_msg') {
