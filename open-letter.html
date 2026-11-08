@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -4597,7 +4597,7 @@
         let peer = null;
         let conns = {}; 
         let isHost = false;
-        let mySlot = 1; // 1为房主/裁判，2+为玩家
+        let mySlot = null; // 房主创建房间时设为1，玩家收到房间状态后再匹配
         let battleRoomId = null;
         let battlePlayers = {}; // { slot: { name: '', muted: false } }
         let globalMuted = false;
@@ -4622,7 +4622,8 @@
             } else if (screenId === 'battle') {
                 document.getElementById('battleScreen').style.display = 'flex';
             } else {
-                document.getElementById(screenId).style.display = 'block';
+                const targetScreen = document.getElementById(screenId);
+                if (targetScreen) targetScreen.style.display = 'block';
             }
         }
 
@@ -4663,7 +4664,8 @@
             
             document.getElementById('battleQuestionsList').innerHTML = '';
             document.getElementById('chatMessages').innerHTML = '';
-            document.getElementById('battleResultModal').style.display = 'none';
+            const modal = document.getElementById('battleResultModal');
+            if (modal) modal.style.display = 'none';
             // ======================================
 
             isHost = true;
@@ -4672,6 +4674,14 @@
             battleRoomId = generateRoomId();
 
             peer = new Peer(BATTLE_PREFIX + battleRoomId, { debug: 1 });
+            peer.on('error', (err) => {
+                console.error('房主 PeerJS 错误:', err);
+                if (err.type === 'unavailable-id') {
+                    alert('房间号冲突，请重新创建房间');
+                    cleanupBattle();
+                    switchScreen('battle');
+                }
+            });
             
             peer.on('open', () => {
                 document.getElementById('battleLobby').style.display = 'none';
@@ -4680,7 +4690,8 @@
                 document.getElementById('battleRoleDisplay').textContent = '裁判 (房主)';
                 document.getElementById('battleRoleDisplay').style.background = '#fef08a';
                 document.getElementById('hostControls').style.display = 'block';
-                document.getElementById('playerControls').style.display = 'none';
+                const playerControls = document.getElementById('playerControls');
+                if (playerControls) playerControls.style.display = 'none';
                 document.getElementById('chatInput').disabled = false;
                 document.getElementById('chatInput').placeholder = "裁判可在此发公告...";
                 
@@ -4751,7 +4762,8 @@
                     document.getElementById('battleRoleDisplay').textContent = '玩家';
                     document.getElementById('battleRoleDisplay').style.background = '#dbeafe';
                     document.getElementById('hostControls').style.display = 'none';
-                    document.getElementById('playerControls').style.display = 'block';
+                    const playerControls = document.getElementById('playerControls');
+                    if (playerControls) playerControls.style.display = 'block';
                     
                     document.getElementById('chatInput').disabled = false;
                     document.getElementById('chatInput').placeholder = "输入聊天内容...";
@@ -4770,6 +4782,7 @@
                 if(err.type === 'peer-unavailable') {
                     alert('房间不存在或已解散');
                     cleanupBattle();
+                    switchScreen('battle');
                 }
             });
         });
@@ -4789,8 +4802,11 @@
             document.getElementById('battleLobby').style.display = 'block';
             document.getElementById('battleRoomArea').style.display = 'none';
             document.getElementById('chatMessages').innerHTML = '';
-            document.getElementById('btnGlobalMute').textContent = '全体禁言';
-            document.getElementById('btnGlobalMute').style.background = '#f59e0b';
+            const muteBtnEl = document.getElementById('btnGlobalMute');
+            if (muteBtnEl) {
+                muteBtnEl.textContent = '全体禁言';
+                muteBtnEl.style.background = '#f59e0b';
+            }
         }
 
         // ==================== 消息处理 ====================
@@ -4800,9 +4816,15 @@
             if (msg.type === 'join') {
                 let freeSlot = 2;
                 while (battlePlayers[freeSlot]) freeSlot++;
+                if (freeSlot > 4) {
+                    try { conn.send({ type: 'kick' }); } catch (e) {}
+                    setTimeout(() => { try { conn.close(); } catch (e) {} }, 100);
+                    return;
+                }
                 battlePlayers[freeSlot] = { name: msg.name, muted: false, score: 0 };
                 conns[freeSlot] = conn;
                 conn._slot = freeSlot;
+                conn.send({ type: 'assignedSlot', slot: freeSlot });
                 
                 const sysMsg = `${msg.name} 加入了房间`;
                 addBattleChat('sys', sysMsg);
@@ -4810,6 +4832,9 @@
                 
                 renderBattlePlayers();
                 broadcastState();
+            } else if (msg.type === 'assignedSlot') {
+                mySlot = msg.slot;
+                return;
             } else if (msg.type === 'chat') {
                 const player = battlePlayers[msg.slot];
                 if (!player) return;
@@ -4837,13 +4862,17 @@
                 }
                 
                 // 找到自己的 slot
-                if (mySlot === 1) {
+                if (mySlot === null) {
                     for (let slot in battlePlayers) {
                         if (battlePlayers[slot].name === document.getElementById('battleNameInput').value.trim()) {
                             mySlot = parseInt(slot);
                             break;
                         }
                     }
+                }
+                // 如果昵称匹配失败，用房主回传的 assignedSlot 兜底
+                if (mySlot === null && msg.state.assignedSlot !== undefined) {
+                    mySlot = msg.state.assignedSlot;
                 }
 
                 renderBattleUI();
@@ -4868,6 +4897,11 @@
             if (isHost) return;
 
             const me = battlePlayers[mySlot];
+            if (mySlot === null) {
+                chatInput.disabled = true;
+                chatInput.placeholder = "正在分配座位，请稍候...";
+                return;
+            }
             if (me && me.muted) {
                 chatInput.disabled = true;
                 chatInput.placeholder = "你已被裁判禁言";
