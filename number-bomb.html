@@ -25,6 +25,10 @@
         button:disabled { background: #cbd5e1 !important; cursor: not-allowed; opacity: 0.7; }
         
         .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #ffffff; }
+        .range-banner { flex-shrink: 0; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-bottom: 3px solid #ef4444; padding: 10px 20px; text-align: center; }
+        .range-label { font-size: 11px; color: #991b1b; font-weight: bold; letter-spacing: 2px; }
+        .range-numbers { font-size: 34px; font-weight: bold; color: #dc2626; font-family: 'Courier New', Consolas, monospace; letter-spacing: 3px; margin: 2px 0; text-shadow: 0 2px 8px rgba(239,68,68,0.25); }
+        .range-turn { font-size: 13px; color: #7f1d1d; font-weight: bold; min-height: 18px; }
         .msg { padding: 10px 14px; border-radius: 10px; font-size: 15px; line-height: 1.5; max-width: 85%; word-break: break-all; }
         
         /* 系统消息：居中 */
@@ -54,6 +58,10 @@
         .player-item.active-turn { border-left-color: #3b82f6; background: #eff6ff; font-weight: bold; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
         .player-item.dead { opacity: 0.5; text-decoration: line-through; }
         .player-item .score { color: #10b981; font-weight: bold; }
+        .player-item.watcher { border-left-color: #94a3b8; background: #f8fafc; }
+        .player-item.watcher .watcher-badge { background: #e2e8f0; color: #475569; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-left: 4px; }
+        .player-item .join-btn { padding: 4px 10px; font-size: 11px; border: none; border-radius: 4px; background: #10b981; color: white; cursor: pointer; font-weight: bold; margin-left: 6px; }
+        .player-item .join-btn:hover { background: #059669; }
 
         /* 弹窗 */
         #roomModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 10000; justify-content: center; align-items: center; }
@@ -85,11 +93,25 @@
             </div>
         </div>
         
+        <div class="range-banner" id="rangeBanner" style="display:none;">
+            <div class="range-label">💣 炸弹范围</div>
+            <div class="range-numbers" id="rangeNumbers">1 ~ 10000</div>
+            <div class="range-turn" id="rangeTurn"></div>
+        </div>
+
         <div class="chat-area" id="chatArea"></div>
 
         <div class="input-area">
             <div class="timer-bar" id="timerBar"><div class="timer-fill" id="timerFill"></div></div>
-            
+
+            <div id="joinChoiceArea" style="display:none; padding: 12px; background: #eff6ff; border-radius: 8px; margin-bottom: 10px; border: 2px solid #3b82f6;">
+                <div style="font-size: 14px; color: #1e40af; margin-bottom: 10px; font-weight: bold; text-align: center;">⚔️ 游戏进行中，请选择参与方式：</div>
+                <div style="display:flex; gap:10px;">
+                    <button id="btnChoosePlay" class="btn-success" style="flex:1; padding: 14px; font-size: 16px;">🎮 加入游戏</button>
+                    <button id="btnChooseWatch" class="btn-primary" style="flex:1; padding: 14px; font-size: 16px;">👀 观战</button>
+                </div>
+            </div>
+
             <div id="joinActionArea" style="display: none; margin-bottom: 5px;">
                 <button id="btnJoinGame" class="btn-success" style="width: 100%; padding: 14px; font-size: 16px;">⚔️ 准备 / 开始游戏</button>
             </div>
@@ -231,24 +253,44 @@
 
     function updatePlayerUI() {
         playerListEl.innerHTML = players.map(p => {
-            let isTurn = (p.id === currentTurnId && gameState === 'playing');
+            let isTurn = (p.id === currentTurnId && gameState === 'playing' && p.alive);
             let isMe = (p.id === myPlayerId);
-            
-            // 区分状态显示
-            let statusText = '';
-            if (p.isWaiting) statusText = ' (观战中)';
-            else if (!p.alive && gameState === 'playing') statusText = ' (已淘汰)';
+            let isWatcher = !!p.isWaiting;
 
-            return `<div class="player-item ${isTurn ? 'active-turn' : ''} ${!p.alive && !p.isWaiting ? 'dead' : ''}">
-                <span>${p.name} ${isMe ? '(你)' : ''} ${isTurn ? '🎯' : ''}${statusText}</span>
+            let statusText = '';
+            if (isWatcher) statusText = ' 👀 观战';
+            else if (!p.alive && gameState === 'playing') statusText = ' 💀 已淘汰';
+
+            let cls = 'player-item';
+            if (isTurn) cls += ' active-turn';
+            if (!p.alive && !isWatcher) cls += ' dead';
+            if (isWatcher) cls += ' watcher';
+
+            let badgeHtml = isWatcher ? `<span class="watcher-badge">观战</span>` : '';
+            let joinBtnHtml = '';
+            if (isMe && isWatcher && gameState === 'playing') {
+                joinBtnHtml = `<button class="join-btn" data-my-join="1">🎮 加入</button>`;
+            }
+
+            return `<div class="${cls}">
+                <span>${p.name} ${isMe ? '(你)' : ''} ${isTurn ? '🎯' : ''}${statusText}${badgeHtml}${joinBtnHtml}</span>
                 <span class="score">${p.score} 分</span>
             </div>`;
         }).join('');
+
+        playerListEl.querySelectorAll('.join-btn[data-my-join]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (hostConn && hostConn.open && myPlayerId) {
+                    hostConn.send({ type: 'watcher_join', id: myPlayerId });
+                }
+            });
+        });
     }
 
     function updateUIBasedOnState() {
         updatePlayerUI();
-        
+        updateRangeBanner();
+
         if (gameState !== 'playing') {
             timerBar.style.display = 'none';
         }
@@ -258,8 +300,13 @@
         joinActionArea.style.display = 'none'; // 隐藏准备按钮，避免占位
 
         if (gameState === 'playing') {
-            if (currentTurnId === myPlayerId) {
-                guessInput.placeholder = `轮到你了！输入 ${min}~${max} 报数，或发文字聊天...`;
+            let me = players.find(p => p.id === myPlayerId);
+            let isMeWatcher = me && me.isWaiting;
+
+            if (isMeWatcher) {
+                guessInput.placeholder = `👀 你正在观战，点击自己名字旁「🎮 加入」参战，或发文字聊天`;
+            } else if (currentTurnId === myPlayerId) {
+                guessInput.placeholder = `🔥 轮到你了！输入 ${min}~${max} 报数`;
                 guessInput.focus();
             } else {
                 let activeP = players.find(p => p.id === currentTurnId);
@@ -268,16 +315,38 @@
             }
         } else if (gameState === 'waiting') {
             guessInput.placeholder = `输入文字聊天...（等待开始）`;
-            // 房主的开始按钮单独放到底部输入框上方
             if (isHost) {
                 joinActionArea.style.display = 'block';
                 btnJoinGame.style.display = 'block';
-                btnJoinGame.innerText = '🚀 开始游戏 (需至少2人)';
-                btnJoinGame.disabled = (players.length < 2);
+                const activeCount = players.filter(p => !p.isWaiting).length;
+                btnJoinGame.disabled = (activeCount < 2);
+                btnJoinGame.innerText = `🚀 开始游戏 (${activeCount}人参战)`;
             }
         } else if (gameState === 'ended') {
             guessInput.placeholder = `结算中...（可发文字聊天）`;
         }
+    }
+
+    function updateRangeBanner() {
+        const banner = document.getElementById('rangeBanner');
+        if (!banner) return;
+
+        if (gameState !== 'playing') {
+            banner.style.display = 'none';
+            return;
+        }
+
+        banner.style.display = 'block';
+        document.getElementById('rangeNumbers').textContent = `${min} ~ ${max}`;
+
+        let turnText = '';
+        if (currentTurnId === myPlayerId) {
+            turnText = '🔥 轮到你了！请尽快报数';
+        } else {
+            let activeP = players.find(p => p.id === currentTurnId);
+            turnText = activeP ? `🎯 轮到 ${activeP.name} 报数` : '';
+        }
+        document.getElementById('rangeTurn').textContent = turnText;
     }
 
     // ================= 5. PeerJS 联机 =================
@@ -311,7 +380,23 @@
         myName = playerNameInput.value.trim() || '房主';
         roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
         isHost = true;
-        peer = new Peer('bomb-' + roomId);
+        peer = new Peer('bomb-' + roomId, {
+            debug: 1,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
+        peer.on('error', (err) => {
+            console.error('PeerJS 创建错误:', err);
+            if (err.type === 'unavailable-id') {
+                alert('房间号冲突，请重新创建');
+            } else {
+                alert('创建房间失败：' + (err.type || err.message || '未知错误'));
+            }
+        });
         
         peer.on('open', () => {
             roomModal.style.display = 'none';
@@ -355,7 +440,15 @@
         myName = playerNameInput.value.trim() || '玩家';
         roomId = joinId;
         isHost = false;
-        peer = new Peer(null);
+        peer = new Peer(null, {
+            debug: 1,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
 
         peer.on('open', () => {
             hostConn = peer.connect('bomb-' + roomId, { reliable: true });
@@ -379,6 +472,14 @@
                 alert('❌ 与房主断开连接'); window.location.reload();
             });
         });
+        peer.on('error', (err) => {
+            console.error('PeerJS 加入错误:', err);
+            if (err.type === 'peer-unavailable') {
+                alert('房间不存在，请检查房间号');
+            } else {
+                alert('加入房间失败：' + (err.type || err.message || '未知错误'));
+            }
+        });
     });
 
     btnLeaveRoom.addEventListener('click', () => {
@@ -399,21 +500,39 @@
         if (data.type === 'join') {
             conn.playerId = data.id;
             conn.playerName = data.name;
-            
-            if (!players.find(p => p.id === data.id)) {
-                // 如果游戏正在运行或正在结算，标记为观战等待
+
+            let isNewPlayer = !players.find(p => p.id === data.id);
+
+            if (isNewPlayer) {
                 let isWaiting = (gameState === 'playing' || gameState === 'ended');
-                // 使用玩家传来的分数
                 players.push({ id: data.id, name: data.name, score: data.score || 0, alive: !isWaiting, isWaiting: isWaiting });
             }
-            
+
             broadcastState();
-            
-            if (gameState === 'playing' || gameState === 'ended') {
-                sysMsg(`👋 <b>${data.name}</b> 加入了房间，正在观战等待下一轮！`);
-                conn.send({ type: 'broadcast_msg', text: `📢 房主当前正在游戏中，你将作为旁观者等待下一轮开始。`, msgType: 'sys highlight', isSys: true });
-            } else {
+
+            if (isNewPlayer && (gameState === 'playing' || gameState === 'ended')) {
+                sysMsg(`👋 <b>${data.name}</b> 加入了房间，默认观战`);
+                if (conn.open) {
+                    try { conn.send({ type: 'ask_join_mode' }); } catch (e) {}
+                }
+            } else if (isNewPlayer) {
                 sysMsg(`👋 <b>${data.name}</b> 加入了战场！`);
+            }
+        }
+        else if (data.type === 'watcher_join') {
+            let p = players.find(x => x.id === data.id);
+            if (p && p.isWaiting) {
+                p.isWaiting = false;
+                p.alive = true;
+                broadcastState();
+                sysMsg(`🎮 <b>${p.name}</b> 加入了战斗，将在下一轮参与报数！`);
+                let currentAliveP = players.find(x => x.id === currentTurnId && x.alive);
+                if (gameState === 'playing' && !currentAliveP) {
+                    currentTurnId = p.id;
+                    broadcastState();
+                    sysMsg(`🎯 轮到 <b>${p.name}</b> 出手！当前范围 ${min}~${max}`);
+                    startTimer();
+                }
             }
         }
         else if (data.type === 'guess') {
@@ -422,7 +541,7 @@
         }
         else if (data.type === 'chat') {
             let chatHtml = `<span class="name-tag">[${data.name}]</span> ${data.text}`;
-            addMsg(chatHtml, 'player-other'); // 房主本地看到是左侧
+            addMsg(chatHtml, 'player-other');
             broadcastToAll({ type: 'broadcast_msg', text: chatHtml, isSys: false, senderId: data.id });
         }
     }
@@ -516,13 +635,12 @@
         setTimeout(() => {
             if (isHost) {
                 gameState = 'waiting';
-                players.forEach(p => { 
-                    p.alive = true; 
-                    p.isWaiting = false; // 解除观战状态，准备下轮参战
+                players.forEach(p => {
+                    if (!p.isWaiting) p.alive = true;
                 });
                 currentTurnId = null;
                 broadcastState();
-                sysMsg(`🔄 游戏已重置，房主可再次开始。（观战玩家已加入）`, 'sys highlight');
+                sysMsg(`🔄 游戏已重置，房主可再次开始。（观战者仍为观战）`, 'sys highlight');
             }
         }, 4000);
     }
@@ -546,7 +664,12 @@
     // ================= 7. 客户端处理逻辑 =================
     function handleClientReceive(data) {
         if (data.type === 'kick') { alert(data.msg); window.location.reload(); return; }
-        
+
+        if (data.type === 'ask_join_mode') {
+            document.getElementById('joinChoiceArea').style.display = 'block';
+            return;
+        }
+
         if (data.type === 'state') {
             players = data.players;
             min = data.min;
@@ -644,22 +767,37 @@
     }
 
     // ================= 9. 游戏流程控制 =================
+    document.getElementById('btnChoosePlay').addEventListener('click', () => {
+        document.getElementById('joinChoiceArea').style.display = 'none';
+        if (hostConn && hostConn.open && myPlayerId) {
+            hostConn.send({ type: 'watcher_join', id: myPlayerId });
+        }
+    });
+
+    document.getElementById('btnChooseWatch').addEventListener('click', () => {
+        document.getElementById('joinChoiceArea').style.display = 'none';
+    });
+
     btnJoinGame.addEventListener('click', () => {
         if (!isHost || gameState !== 'waiting') return;
-        if (players.length < 2) return alert('至少需要 2 人才能开始！');
-        
+        const activePlayers = players.filter(p => !p.isWaiting);
+        if (activePlayers.length < 2) return alert('至少需要 2 名参战玩家才能开始！');
+
         gameState = 'playing';
         min = 1; max = 10000;
         bombNumber = Math.floor(Math.random() * 10000) + 1;
-        pool = 30 + (players.length - 1) * 5;
-        currentTurnId = players[0].id;
-        
-        players.forEach(p => { p.alive = true; });
-        
+        pool = 30 + (activePlayers.length - 1) * 5;
+
+        players.forEach(p => {
+            p.alive = !p.isWaiting;
+        });
+
+        currentTurnId = activePlayers[0].id;
+
         broadcastState();
-        sysMsg(`🧨 <b>数字炸弹已埋下（1~10000 之间）！</b><br>💥 炸弹已锁定。<br>💎 奖池 ${pool} 分：踩雷者 -10，其余平分！`, 'sys highlight');
-        sysMsg(`🎯 轮到 <b>${players[0].name}</b> 出手！当前范围 1~10000（30秒内发数字）`);
-        
+        sysMsg(`🧨 <b>数字炸弹已埋下（1~10000 之间）！</b><br>💥 炸弹已锁定。<br>💎 奖池 ${pool} 分：踩雷者 -10，其余平分！<br>👥 本局参战 ${activePlayers.length} 人`, 'sys highlight');
+        sysMsg(`🎯 轮到 <b>${activePlayers[0].name}</b> 出手！当前范围 1~10000（30秒内发数字）`);
+
         startTimer();
     });
 

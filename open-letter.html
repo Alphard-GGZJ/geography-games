@@ -640,6 +640,24 @@
 
                 <div class="battle-questions" id="battleQuestionsList"></div>
 
+                <!-- 已开字母条 -->
+                <div id="openedLettersBar" style="margin-top: 15px; display: none;">
+                    <div style="font-size: 13px; color: #666; margin-bottom: 6px; font-weight: bold;">🔤 字母表（点击选择要开的字母）：</div>
+                    <div id="openedLettersList" style="display: flex; flex-wrap: wrap; gap: 2px;"></div>
+                    <div id="openedLettersAction" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                        <span id="openedLettersHint" style="font-size: 12px; color: #666; flex: 1;"></span>
+                        <button id="clearOpenLetterBtn" style="padding: 6px 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">清空</button>
+                        <button id="sendOpenLetterBtn" style="padding: 6px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">发送申请</button>
+                    </div>
+                </div>
+
+                <!-- 投票面板 -->
+                <div id="votePanel" style="display: none; margin-top: 15px; padding: 15px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 10px;">
+                    <div id="voteTitle" style="font-weight: bold; margin-bottom: 10px;"></div>
+                    <div id="voteStatus" style="font-size: 13px; color: #666; margin-bottom: 10px;"></div>
+                    <div id="voteButtons" style="display: flex; gap: 8px;"></div>
+                </div>
+
                 <!-- 裁判专属操作 -->
                 <div id="hostControls" style="margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; display: none;">
                     <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
@@ -653,6 +671,17 @@
                         </span>
                         <button id="btnStartBattle" style="background: #10b981; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; height: 36px;">▶ 开始游戏</button>
                     </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
+                        <label style="font-size: 13px; color: #666;">计分模式：</label>
+                        <select id="hostScoreModeSelect" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; height: 32px;">
+                            <option value="time">按时间（越快分越高）</option>
+                            <option value="fixed">固定分</option>
+                        </select>
+                        <input type="number" id="hostFixedScore" value="5" min="1" max="100" style="width: 60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; display: none; height: 32px;" title="每题固定分数">
+                        <label style="font-size: 13px; color: #666;">限时（分钟，0=不限）：</label>
+                        <input type="number" id="hostTimeLimit" value="0" min="0" max="120" style="width: 60px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; height: 32px;">
+                        <button id="btnEndBattle" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none; height: 32px;">⏹ 结束游戏</button>
+                    </div>
                     <textarea id="hostManualBank" placeholder="每行输入一个地名即可，无需拼音&#10;例如：&#10;北京&#10;上海&#10;广州"  style="width: 100%; height: 80px; display: none; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace;"></textarea>
                 </div>
             </div>
@@ -663,7 +692,7 @@
                 <div class="battle-chat-box">
                     <div class="chat-messages" id="chatMessages"></div>
                     <div class="chat-input-area">
-                        <input type="text" id="chatInput" placeholder="输入地名或 开字母:A" autocomplete="off">
+                        <input type="text" id="chatInput" placeholder="输入地名" autocomplete="off">
                         <button id="btnSendChat">发送</button>
                     </div>
                 </div>
@@ -677,11 +706,21 @@
         <div style="background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <h2 style="color: #4f46e5; margin-bottom: 20px;">🏆 游戏结算</h2>
             <div id="battleResultList" style="margin-bottom: 25px; text-align: left; padding: 0 20px; font-size: 16px; line-height: 2;"></div>
+            <button id="btnShowReplay" style="width: 100%; padding: 12px; background: #8b5cf6; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">📋 查看复盘</button>
             <button id="btnPlayAgain" style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer;">🔄 再来一局</button>
             <button id="btnLeaveAfterResult" style="width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer;">🚪 离开房间</button>
             <div id="waitHostText" style="margin-top: 15px; font-size: 13px; color: #888; display: none;">或等待房主开始新的一局游戏...</div>
         </div>
     </div>
+
+<!-- 复盘弹窗 -->
+<div id="battleReplayModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10002; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <h2 style="color: #4f46e5; margin-bottom: 15px; text-align: center;">📋 对局复盘</h2>
+        <div id="battleReplayContent"></div>
+        <button id="btnCloseReplay" style="width: 100%; padding: 10px; background: #4f46e5; color: white; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer; font-weight: bold;">关闭</button>
+    </div>
+</div>
 
 <!-- 主持人大屏模式 -->
 <div id="hostScreen" style="display: none; position: fixed; inset: 0; z-index: 9998; background: #f3f4f6;">
@@ -4609,6 +4648,18 @@
         let battleStartTime = 0;
         let battleTimerInterval = null;
         const BATTLE_PREFIX = 'dili-openletter-';
+        // 开字母投票与计分设置
+        let openLetterVotes = null; // { letters:[], initiatorSlot, initiatorName, votes:{slot:bool}, startTime }
+        let voteTimeoutTimer = null;
+        let battleScoreMode = 'time';
+        let battleFixedScore = 5;
+        let battleTimeLimit = 0;
+        let battleEndTime = 0;
+        let battleEndCheckInterval = null;
+        let openedLettersHistory = [];
+        let battleReplayLog = [];
+        let selectedLetters = new Set();
+        let battleFinishedAt = 0;
 
         // UI 切换
         function switchScreen(screenId) {
@@ -4673,7 +4724,15 @@
             battlePlayers[1] = { name: name, muted: false, score: 0 };
             battleRoomId = generateRoomId();
 
-            peer = new Peer(BATTLE_PREFIX + battleRoomId, { debug: 1 });
+            peer = new Peer(BATTLE_PREFIX + battleRoomId, {
+                debug: 1,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
             peer.on('error', (err) => {
                 console.error('房主 PeerJS 错误:', err);
                 if (err.type === 'unavailable-id') {
@@ -4710,13 +4769,17 @@
                             const lostName = battlePlayers[slot] ? battlePlayers[slot].name : '未知';
                             delete battlePlayers[slot];
                             delete conns[slot];
+                            if (openLetterVotes && openLetterVotes.votes[slot] !== undefined) {
+                                delete openLetterVotes.votes[slot];
+                            }
                             
                             const lostMsg = `${lostName} 已断开连接`;
                             addBattleChat('sys', lostMsg);
-                            broadcastChat({ type: 'chat', chatType: 'sys', text: lostMsg }); // 广播给其他玩家
+                            broadcastChat({ type: 'chat', chatType: 'sys', text: lostMsg });
                             
                             renderBattlePlayers();
                             broadcastState();
+                            if (openLetterVotes) checkVoteResult();
                             break;
                         }
                     }
@@ -4751,9 +4814,17 @@
             isHost = false;
             battleRoomId = roomId;
 
-            peer = new Peer(null, { debug: 1 });
+            peer = new Peer(null, {
+                debug: 1,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
             peer.on('open', () => {
-                const conn = peer.connect(BATTLE_PREFIX + roomId);
+                const conn = peer.connect(BATTLE_PREFIX + roomId, { reliable: true });
                 conn.on('open', () => {
                     conn.send({ type: 'join', name: name });
                     document.getElementById('battleLobby').style.display = 'none';
@@ -4799,6 +4870,17 @@
             globalRevealedLetters.clear();
             battleChatLog = [];
             battleState = 'waiting';
+            openLetterVotes = null;
+            if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+            if (battleEndCheckInterval) { clearInterval(battleEndCheckInterval); battleEndCheckInterval = null; }
+            battleScoreMode = 'time';
+            battleFixedScore = 5;
+            battleTimeLimit = 0;
+            battleEndTime = 0;
+            openedLettersHistory = [];
+            battleReplayLog = [];
+            selectedLetters = new Set();
+            battleFinishedAt = 0;
             document.getElementById('battleLobby').style.display = 'block';
             document.getElementById('battleRoomArea').style.display = 'none';
             document.getElementById('chatMessages').innerHTML = '';
@@ -4832,9 +4914,6 @@
                 
                 renderBattlePlayers();
                 broadcastState();
-            } else if (msg.type === 'assignedSlot') {
-                mySlot = msg.slot;
-                return;
             } else if (msg.type === 'chat') {
                 const player = battlePlayers[msg.slot];
                 if (!player) return;
@@ -4845,11 +4924,23 @@
                 }
                 
                 processBattleChat(msg.slot, player.name, msg.text);
+            } else if (msg.type === 'vote') {
+                handleVoteMessage(msg.slot, msg.agree);
+            } else if (msg.type === 'open_letter_request') {
+                const player = battlePlayers[msg.slot];
+                if (!player) return;
+                if (player.muted || globalMuted) return;
+                initiateOpenLetterVote(msg.slot, player.name, msg.letters);
             }
         }
 
         function handleHostMessage(msg) {
-            if (msg.type === 'state') {
+        if (msg.type === 'assignedSlot') {
+            mySlot = msg.slot;
+            updateChatInputState();
+            return;
+        }
+        if (msg.type === 'state') {
                 battleState = msg.state.state;
                 battlePlayers = msg.state.players;
                 globalMuted = msg.state.globalMuted || false;
@@ -4860,6 +4951,13 @@
                 if (msg.state.battleMode) {
                     currentBattleMode = msg.state.battleMode;
                 }
+                openLetterVotes = msg.state.openLetterVotes || null;
+                openedLettersHistory = msg.state.openedLettersHistory || [];
+                battleScoreMode = msg.state.scoreMode || 'time';
+                battleFixedScore = msg.state.fixedScore || 5;
+                battleTimeLimit = msg.state.timeLimit || 0;
+                battleEndTime = msg.state.endTime || 0;
+                battleReplayLog = msg.state.replayLog || [];
                 
                 // 找到自己的 slot
                 if (mySlot === null) {
@@ -4869,10 +4967,6 @@
                             break;
                         }
                     }
-                }
-                // 如果昵称匹配失败，用房主回传的 assignedSlot 兜底
-                if (mySlot === null && msg.state.assignedSlot !== undefined) {
-                    mySlot = msg.state.assignedSlot;
                 }
 
                 renderBattleUI();
@@ -4910,7 +5004,7 @@
                 chatInput.placeholder = "裁判已开启全体禁言";
             } else {
                 chatInput.disabled = false;
-                chatInput.placeholder = battleState === 'playing' ? "输入地名或 开字母:A" : "输入聊天内容...";
+                chatInput.placeholder = battleState === 'playing' ? "输入地名" : "输入聊天内容...";
             }
         }
 
@@ -4927,7 +5021,14 @@
                     questions: battleQuestions,
                     revealedLetters: Array.from(globalRevealedLetters),
                     startTime: battleStartTime,
-                    battleMode: currentBattleMode // ===== 新增：同步出题模式 =====
+                    battleMode: currentBattleMode,
+                    openLetterVotes: openLetterVotes,
+                    openedLettersHistory: openedLettersHistory,
+                    scoreMode: battleScoreMode,
+                    fixedScore: battleFixedScore,
+                    timeLimit: battleTimeLimit,
+                    endTime: battleEndTime,
+                    replayLog: battleReplayLog
                 }
             };
             for (let slot in conns) {
@@ -4951,6 +5052,9 @@
             
             const mode = document.getElementById('hostBankSelect').value;
             currentBattleMode = mode;
+            battleScoreMode = document.getElementById('hostScoreModeSelect').value;
+            battleFixedScore = parseInt(document.getElementById('hostFixedScore').value, 10) || 5;
+            battleTimeLimit = (parseInt(document.getElementById('hostTimeLimit').value, 10) || 0) * 60;
             let db = [];
             let region = '全国';
             let inputCount = 6;
@@ -5002,16 +5106,30 @@
             }
 
             globalRevealedLetters.clear();
+            selectedLetters.clear();
             battleState = 'playing';
             battleChatLog = [];
-            battleStartTime = Date.now(); // 记录开始时间
+            battleStartTime = Date.now();
+            openedLettersHistory = [];
+            battleReplayLog = [];
+            openLetterVotes = null;
+            if (battleTimeLimit > 0) {
+                battleEndTime = Date.now() + battleTimeLimit * 1000;
+                if (battleEndCheckInterval) clearInterval(battleEndCheckInterval);
+                battleEndCheckInterval = setInterval(() => {
+                    if (battleState !== 'playing') { clearInterval(battleEndCheckInterval); battleEndCheckInterval = null; return; }
+                    if (Date.now() >= battleEndTime) endBattle('timeout');
+                }, 1000);
+            } else {
+                battleEndTime = 0;
+            }
             
             const startMsg = `游戏开始！地区范围：${region}，共 ${count} 题。`;
             addBattleChat('sys', startMsg);
             broadcastChat({ type: 'chat', chatType: 'sys', text: startMsg });
             
             if (currentBattleMode === 'random') {
-                document.getElementById('chatInput').placeholder = "输入地名或 开字母:A";
+                document.getElementById('chatInput').placeholder = "输入地名";
             } else {
                 document.getElementById('chatInput').placeholder = "裁判可在此发公告...";
             }
@@ -5026,6 +5144,26 @@
             btn.textContent = globalMuted ? '解除全体禁言' : '全体禁言';
             btn.style.background = globalMuted ? '#10b981' : '#f59e0b';
             broadcastState();
+        });
+
+        document.getElementById('hostScoreModeSelect').addEventListener('change', function() {
+            document.getElementById('hostFixedScore').style.display = this.value === 'fixed' ? 'inline-block' : 'none';
+        });
+
+        document.getElementById('btnEndBattle').addEventListener('click', () => {
+            if (!isHost || battleState !== 'playing') return;
+            if (confirm('确定结束当前游戏吗？')) endBattle('host_end');
+        });
+
+        document.getElementById('sendOpenLetterBtn').addEventListener('click', sendOpenLetterRequest);
+        document.getElementById('clearOpenLetterBtn').addEventListener('click', () => {
+            selectedLetters.clear();
+            renderOpenedLetters();
+        });
+
+        document.getElementById('btnShowReplay').addEventListener('click', showBattleReplay);
+        document.getElementById('btnCloseReplay').addEventListener('click', () => {
+            document.getElementById('battleReplayModal').style.display = 'none';
         });
         // ===== 复制房间号功能 =====
         document.getElementById('btnCopyRoomId').addEventListener('click', () => {
@@ -5083,23 +5221,6 @@
         function processBattleChat(slot, sender, text) {
             if (!isHost) return;
 
-            const letterMatch = text.match(/^开字母[：:]\s*([a-zA-Z])$/i);
-            if (letterMatch && battleState === 'playing') {
-                if (slot === 1 && currentBattleMode === 'manual') {
-                    addBattleChat('sys', `[裁判公告] ${text}`);
-                    broadcastChat({ type: 'chat', chatType: 'sys', text: `[裁判公告] ${text}` });
-                    return;
-                }
-                
-                const letter = letterMatch[1].toLowerCase();
-                globalRevealedLetters.add(letter);
-                const sysMsg = `${sender} 开启了字母 ${letter.toUpperCase()}`;
-                addBattleChat('sys', sysMsg);
-                broadcastChat({ type: 'chat', chatType: 'sys', text: sysMsg });
-                broadcastState();
-                return;
-            }
-
             if (battleState === 'playing') {
                 if (slot === 1 && currentBattleMode === 'manual') {
                     addBattleChat('sys', `[裁判公告] ${text}`);
@@ -5115,41 +5236,32 @@
                         q.isCorrect = true;
                         matched = true;
                         
-                        // ===== 得分计算核心逻辑 =====
-                        // 1. 计算当前耗时（秒）
                         let elapsed = Math.floor((Date.now() - battleStartTime) / 1000);
                         let points = 0;
-                        
-                        // 2. 根据规则计算基础分
-                        if (elapsed <= 180) points = 5;
-                        else if (elapsed <= 300) points = 3;
-                        else if (elapsed <= 600) points = 2;
-                        else if (elapsed <= 900) points = 1;
-                        else points = 0; // 超过15分钟不得分
-
-                        // 3. 判断是否是最后一题
-                        let isLastQuestion = battleQuestions.every(item => item.isCorrect);
-                        if (isLastQuestion) {
-                            points += 2;
+                        if (battleScoreMode === 'fixed') {
+                            points = battleFixedScore;
+                        } else {
+                            if (elapsed <= 180) points = 5;
+                            else if (elapsed <= 300) points = 3;
+                            else if (elapsed <= 600) points = 2;
+                            else if (elapsed <= 900) points = 1;
+                            else points = 0;
                         }
-
-                        // 4. 加分
+                        let isLastQuestion = battleQuestions.every(item => item.isCorrect);
+                        if (isLastQuestion && battleScoreMode === 'time') points += 2;
                         if (battlePlayers[slot]) {
                             battlePlayers[slot].score = (battlePlayers[slot].score || 0) + points;
                         }
-
+                        battleReplayLog.push({
+                            question: q.name, pinyin: q.pinyin,
+                            bySlot: slot, byName: sender,
+                            elapsed: elapsed, points: points,
+                            time: formatClock(Date.now())
+                        });
                         const correctMsg = `🎉 ${sender} 猜中了：${q.name}，得 ${points} 分！`;
                         addBattleChat('correct', correctMsg);
                         broadcastChat({ type: 'chat', chatType: 'correct', text: correctMsg });
-                        
-                        // 如果是最后一题，结束游戏
-                        if (isLastQuestion) {
-                            battleState = 'finished';
-                            if (battleTimerInterval) clearInterval(battleTimerInterval);
-                            const endMsg = `🏆 游戏结束！所有题目已被猜出。`;
-                            addBattleChat('sys', endMsg);
-                            broadcastChat({ type: 'chat', chatType: 'sys', text: endMsg });
-                        }
+                        if (isLastQuestion) { endBattle('all_cleared'); }
                     }
                 }
 
@@ -5161,6 +5273,128 @@
 
             addBattleChat('msg', `${sender}: ${text}`);
             broadcastChat({ type: 'chat', chatType: 'msg', text: `${sender}: ${text}` });
+        }
+
+        function initiateOpenLetterVote(slot, sender, letters) {
+            if (!isHost || battleState !== 'playing') return;
+            if (openLetterVotes) {
+                const msg = '当前有投票正在进行中，请等待结束';
+                addBattleChat('sys', msg);
+                broadcastChat({ type: 'chat', chatType: 'sys', text: msg });
+                return;
+            }
+            if (!letters || letters.length === 0) return;
+            const unopened = letters.filter(l => !globalRevealedLetters.has(l));
+            if (unopened.length === 0) {
+                const msg = `字母 ${letters.map(l => l.toUpperCase()).join('')} 已经开过了`;
+                addBattleChat('sys', msg);
+                broadcastChat({ type: 'chat', chatType: 'sys', text: msg });
+                return;
+            }
+            openLetterVotes = {
+                letters: unopened,
+                initiatorSlot: slot,
+                initiatorName: sender,
+                votes: {}
+            };
+            const voteMsg = `🗳️ ${sender} 申请开启字母 ${unopened.map(l => l.toUpperCase()).join('、')}，请所有玩家投票（>50% 同意才生效）`;
+            addBattleChat('sys', voteMsg);
+            broadcastChat({ type: 'chat', chatType: 'sys', text: voteMsg });
+            broadcastState();
+            if (voteTimeoutTimer) clearTimeout(voteTimeoutTimer);
+            voteTimeoutTimer = setTimeout(() => { if (openLetterVotes) finalizeVote('timeout'); }, 30000);
+        }
+
+        function handleVoteMessage(slot, agree) {
+            if (!isHost || !openLetterVotes) return;
+            if (openLetterVotes.votes[slot] !== undefined) return;
+            openLetterVotes.votes[slot] = agree;
+            broadcastState();
+            checkVoteResult();
+        }
+
+        function checkVoteResult() {
+            if (!isHost || !openLetterVotes) return;
+            const totalPlayers = Object.keys(battlePlayers).length;
+            const totalVotes = Object.keys(openLetterVotes.votes).length;
+            const agreeCount = Object.values(openLetterVotes.votes).filter(v => v === true).length;
+            const remaining = totalPlayers - totalVotes;
+            if (agreeCount > totalPlayers / 2) { finalizeVote('passed'); return; }
+            if (agreeCount + remaining <= totalPlayers / 2) { finalizeVote('rejected'); return; }
+            if (remaining === 0) { finalizeVote('all_voted'); }
+        }
+
+        function finalizeVote(reason) {
+            if (!isHost || !openLetterVotes) return;
+            if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+            const totalPlayers = Object.keys(battlePlayers).length;
+            const agreeCount = Object.values(openLetterVotes.votes).filter(v => v === true).length;
+            const passed = agreeCount > totalPlayers / 2;
+            if (passed) {
+                openLetterVotes.letters.forEach(l => {
+                    globalRevealedLetters.add(l);
+                    openedLettersHistory.push({
+                        letter: l,
+                        byName: openLetterVotes.initiatorName,
+                        bySlot: openLetterVotes.initiatorSlot,
+                        time: formatClock(Date.now())
+                    });
+                });
+            }
+            const reasonText = reason === 'timeout' ? '投票超时' : '投票结束';
+            const resultMsg = passed
+                ? `✅ ${reasonText}：${agreeCount}/${totalPlayers} 同意，字母 ${openLetterVotes.letters.map(l => l.toUpperCase()).join('、')} 已开启`
+                : `❌ ${reasonText}：${agreeCount}/${totalPlayers} 同意，未达到 >50%，字母未开启`;
+            addBattleChat('sys', resultMsg);
+            broadcastChat({ type: 'chat', chatType: 'sys', text: resultMsg });
+            openLetterVotes = null;
+            selectedLetters.clear();
+            broadcastState();
+        }
+
+        function endBattle(reason) {
+            if (!isHost || battleState !== 'playing') return;
+            battleState = 'finished';
+            battleFinishedAt = Date.now();
+            if (battleTimerInterval) clearInterval(battleTimerInterval);
+            if (battleEndCheckInterval) { clearInterval(battleEndCheckInterval); battleEndCheckInterval = null; }
+            if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+            openLetterVotes = null;
+            let endMsg = '';
+            if (reason === 'timeout') endMsg = '⏰ 游戏时间到，自动结束。';
+            else if (reason === 'all_cleared') endMsg = '🏆 所有题目已被猜出，游戏结束！';
+            else if (reason === 'host_end') endMsg = '🛑 房主主动结束了游戏。';
+            else endMsg = '游戏结束。';
+            addBattleChat('sys', endMsg);
+            broadcastChat({ type: 'chat', chatType: 'sys', text: endMsg });
+            broadcastState();
+        }
+
+        function sendOpenLetterRequest() {
+            if (battleState !== 'playing') return;
+            if (openLetterVotes) return;
+            if (selectedLetters.size === 0) return;
+            const letters = Array.from(selectedLetters).sort();
+            selectedLetters.clear();
+            if (isHost) {
+                initiateOpenLetterVote(1, battlePlayers[1].name, letters);
+                renderOpenedLetters();
+            } else {
+                const me = battlePlayers[mySlot];
+                if (me && (me.muted || globalMuted)) { alert('你已被禁言，无法发起申请'); renderOpenedLetters(); return; }
+                if (conns['host'] && conns['host'].open) {
+                    conns['host'].send({ type: 'open_letter_request', slot: mySlot, letters: letters });
+                } else {
+                    alert('与房主连接已断开');
+                }
+                renderOpenedLetters();
+            }
+        }
+
+        function sendVote(agree) {
+            if (!openLetterVotes) return;
+            if (isHost) handleVoteMessage(1, agree);
+            else if (conns['host'] && conns['host'].open) conns['host'].send({ type: 'vote', slot: mySlot, agree: agree });
         }
 
         function addBattleChat(type, text) {
@@ -5308,11 +5542,18 @@
             document.getElementById('battleResultModal').style.display = 'none';
             battleState = 'waiting';
             
-            // 清理游戏数据
             battleQuestions = [];
             globalRevealedLetters.clear();
+            selectedLetters.clear();
             battleStartTime = 0;
             stopBattleTimer();
+            openLetterVotes = null;
+            openedLettersHistory = [];
+            battleReplayLog = [];
+            battleFinishedAt = 0;
+            if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+            if (battleEndCheckInterval) { clearInterval(battleEndCheckInterval); battleEndCheckInterval = null; }
+            battleEndTime = 0;
             
             // 重置所有玩家分数
             for (let slot in battlePlayers) {
@@ -5360,10 +5601,19 @@
                     stopBattleTimer();
                     return;
                 }
-                let diff = Math.floor((Date.now() - battleStartTime) / 1000);
-                let m = String(Math.floor(diff / 60)).padStart(2, '0');
-                let s = String(diff % 60).padStart(2, '0');
-                timerDisplay.textContent = `⏱ ${m}:${s}`;
+                if (battleEndTime > 0) {
+                    const left = Math.max(0, Math.floor((battleEndTime - Date.now()) / 1000));
+                    let m = String(Math.floor(left / 60)).padStart(2, '0');
+                    let s = String(left % 60).padStart(2, '0');
+                    timerDisplay.textContent = `⏱ 剩 ${m}:${s}`;
+                    timerDisplay.style.color = left <= 10 ? '#dc2626' : '#ef4444';
+                } else {
+                    let diff = Math.floor((Date.now() - battleStartTime) / 1000);
+                    let m = String(Math.floor(diff / 60)).padStart(2, '0');
+                    let s = String(diff % 60).padStart(2, '0');
+                    timerDisplay.textContent = `⏱ ${m}:${s}`;
+                    timerDisplay.style.color = '#ef4444';
+                }
             }
             
             updateTimerUI(); // 立即执行一次，避免第一秒空白
@@ -5379,8 +5629,213 @@
             }
         }
 
+        function formatClock(ts) {
+            const d = new Date(ts);
+            return String(d.getHours()).padStart(2, '0') + ':' +
+                   String(d.getMinutes()).padStart(2, '0') + ':' +
+                   String(d.getSeconds()).padStart(2, '0');
+        }
+
+        function renderOpenedLetters() {
+            const bar = document.getElementById('openedLettersBar');
+            const list = document.getElementById('openedLettersList');
+            const actionRow = document.getElementById('openedLettersAction');
+            const hint = document.getElementById('openedLettersHint');
+            if (!bar || !list) return;
+
+            if (openLetterVotes) selectedLetters.clear();
+            const canSelect = battleState === 'playing' && !openLetterVotes;
+            bar.style.display = (battleState === 'playing' || globalRevealedLetters.size > 0) ? 'block' : 'none';
+            if (bar.style.display === 'none') return;
+
+            const allLetters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            list.innerHTML = allLetters.map(l => {
+                const isOpen = globalRevealedLetters.has(l);
+                const isSelected = selectedLetters.has(l);
+                let bg = '#e5e7eb', color = '#6b7280', border = '1px solid transparent', cursor = 'not-allowed';
+                if (isOpen) {
+                    bg = '#10b981'; color = 'white';
+                } else if (canSelect) {
+                    cursor = 'pointer';
+                    if (isSelected) { bg = '#fef08a'; color = '#92400e'; border = '2px solid #f59e0b'; }
+                    else { bg = '#f3f4f6'; color = '#374151'; border = '1px solid #d1d5db'; }
+                }
+                const style = `display: inline-block; width: 28px; height: 28px; line-height: 26px; text-align: center; border-radius: 4px; background: ${bg}; color: ${color}; font-weight: bold; font-size: 13px; margin: 1px; border: ${border}; cursor: ${cursor}; user-select: none;`;
+                return `<span data-letter="${l}" class="letter-cell" style="${style}">${l.toUpperCase()}</span>`;
+            }).join('');
+
+            if (canSelect) {
+                list.querySelectorAll('.letter-cell').forEach(el => {
+                    el.onclick = () => {
+                        const l = el.dataset.letter;
+                        if (globalRevealedLetters.has(l)) return;
+                        if (selectedLetters.has(l)) selectedLetters.delete(l);
+                        else selectedLetters.add(l);
+                        renderOpenedLetters();
+                    };
+                });
+            }
+
+            if (actionRow) {
+                const sendBtn = document.getElementById('sendOpenLetterBtn');
+                const clearBtn = document.getElementById('clearOpenLetterBtn');
+                if (battleState === 'playing' && !openLetterVotes) {
+                    actionRow.style.display = 'flex';
+                    const selArr = Array.from(selectedLetters).sort();
+                    if (hint) {
+                        hint.textContent = selArr.length > 0
+                            ? `已选 ${selArr.length} 个：${selArr.map(x => x.toUpperCase()).join('、')}`
+                            : '点击上方字母选择（可多选）';
+                    }
+                    if (sendBtn) {
+                        sendBtn.disabled = selArr.length === 0;
+                        sendBtn.style.opacity = selArr.length === 0 ? '0.5' : '1';
+                    }
+                    if (clearBtn) clearBtn.disabled = selArr.length === 0;
+                } else if (openLetterVotes) {
+                    actionRow.style.display = 'flex';
+                    if (hint) hint.textContent = '投票进行中，请等待结果';
+                    if (sendBtn) sendBtn.disabled = true;
+                    if (clearBtn) clearBtn.disabled = true;
+                } else {
+                    actionRow.style.display = 'none';
+                }
+            }
+        }
+
+        function renderVotePanel() {
+            const panel = document.getElementById('votePanel');
+            if (!panel) return;
+            if (!openLetterVotes || battleState !== 'playing') { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            const lettersStr = openLetterVotes.letters.map(l => l.toUpperCase()).join('、');
+            document.getElementById('voteTitle').textContent = `🗳️ 申请开启字母 ${lettersStr}（发起：${openLetterVotes.initiatorName}）`;
+            const totalPlayers = Object.keys(battlePlayers).length;
+            const votes = openLetterVotes.votes;
+            const agreeCount = Object.values(votes).filter(v => v === true).length;
+            const disagreeCount = Object.values(votes).filter(v => v === false).length;
+            const votedCount = agreeCount + disagreeCount;
+            document.getElementById('voteStatus').textContent = `已投票 ${votedCount}/${totalPlayers}：✅同意 ${agreeCount}，❌拒绝 ${disagreeCount}（需 >${totalPlayers / 2} 同意）`;
+            const myVoted = votes[mySlot];
+            const btnDiv = document.getElementById('voteButtons');
+            let buttonsHtml = '';
+            if (myVoted !== undefined && !isHost) {
+                buttonsHtml = `<span style="color: #666;">你已投票：${myVoted ? '✅ 同意' : '❌ 拒绝'}</span>`;
+            } else {
+                if (myVoted === undefined) {
+                    buttonsHtml += `<button id="voteAgreeBtn" style="flex: 1; padding: 10px; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">✅ 同意</button>`;
+                    buttonsHtml += `<button id="voteDisagreeBtn" style="flex: 1; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">❌ 拒绝</button>`;
+                } else {
+                    buttonsHtml += `<span style="flex: 1; color: #666; line-height: 40px;">你已投票：${myVoted ? '✅ 同意' : '❌ 拒绝'}</span>`;
+                }
+                if (isHost) {
+                    buttonsHtml += `<button id="voteForceBtn" style="flex: 1; padding: 10px; background: #f59e0b; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">⚡ 强制通过</button>`;
+                    buttonsHtml += `<button id="voteVetoBtn" style="flex: 1; padding: 10px; background: #dc2626; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🚫 一票否决</button>`;
+                }
+            }
+            btnDiv.innerHTML = buttonsHtml;
+
+            const agreeBtnEl = document.getElementById('voteAgreeBtn');
+            const disagreeBtnEl = document.getElementById('voteDisagreeBtn');
+            const forceBtnEl = document.getElementById('voteForceBtn');
+            const vetoBtnEl = document.getElementById('voteVetoBtn');
+            if (agreeBtnEl) agreeBtnEl.onclick = () => sendVote(true);
+            if (disagreeBtnEl) disagreeBtnEl.onclick = () => sendVote(false);
+            if (forceBtnEl) {
+                forceBtnEl.onclick = () => {
+                    if (!openLetterVotes) return;
+                    openLetterVotes.letters.forEach(l => {
+                        globalRevealedLetters.add(l);
+                        openedLettersHistory.push({ letter: l, byName: openLetterVotes.initiatorName, bySlot: openLetterVotes.initiatorSlot, time: formatClock(Date.now()) });
+                    });
+                    const msg = `⚡ 房主强制执行：字母 ${openLetterVotes.letters.map(l => l.toUpperCase()).join('、')} 已开启`;
+                    addBattleChat('sys', msg);
+                    broadcastChat({ type: 'chat', chatType: 'sys', text: msg });
+                    openLetterVotes = null;
+                    if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+                    broadcastState();
+                };
+            }
+            if (vetoBtnEl) {
+                vetoBtnEl.onclick = () => {
+                    if (!openLetterVotes) return;
+                    const msg = `🚫 房主一票否决：字母 ${openLetterVotes.letters.map(l => l.toUpperCase()).join('、')} 未开启`;
+                    addBattleChat('sys', msg);
+                    broadcastChat({ type: 'chat', chatType: 'sys', text: msg });
+                    openLetterVotes = null;
+                    if (voteTimeoutTimer) { clearTimeout(voteTimeoutTimer); voteTimeoutTimer = null; }
+                    broadcastState();
+                };
+            }
+        }
+
+        function showBattleReplay() {
+            const modal = document.getElementById('battleReplayModal');
+            const content = document.getElementById('battleReplayContent');
+            if (!modal || !content) return;
+            let totalSec = 0;
+            if (battleStartTime > 0) {
+                const endTs = battleEndTime > 0 ? battleEndTime : (battleFinishedAt > 0 ? battleFinishedAt : Date.now());
+                totalSec = Math.max(0, Math.floor((endTs - battleStartTime) / 1000));
+            }
+            let mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+            let ss = String(totalSec % 60).padStart(2, '0');
+            let html = `<div style="background: #f0f6fa; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
+                <div>⏱ 游戏时长：${mm}:${ss}</div>
+                <div>📊 计分模式：${battleScoreMode === 'fixed' ? '固定 ' + battleFixedScore + ' 分/题' : '按时间（越快越高）'}</div>
+                <div>📝 题目总数：${battleQuestions.length}，已猜出 ${battleQuestions.filter(q => q.isCorrect).length}</div>
+            </div>`;
+            html += `<div style="font-weight: bold; color: #4f46e5; margin-bottom: 8px;">🏆 得分排行</div>`;
+            const playersArr = [];
+            for (let slot in battlePlayers) {
+                if (currentBattleMode === 'manual' && parseInt(slot) === 1) continue;
+                playersArr.push({ slot, name: battlePlayers[slot].name, score: battlePlayers[slot].score || 0 });
+            }
+            playersArr.sort((a, b) => b.score - a.score);
+            html += '<div style="margin-bottom: 15px;">';
+            playersArr.forEach((p, i) => {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '👤';
+                html += `<div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee;"><span>${medal} ${p.name}</span><span style="color: #4f46e5; font-weight: bold;">${p.score} 分</span></div>`;
+            });
+            html += '</div>';
+            html += `<div style="font-weight: bold; color: #4f46e5; margin-bottom: 8px;">📝 猜题记录</div>`;
+            if (battleReplayLog.length === 0) {
+                html += '<div style="color: #999; font-size: 13px; margin-bottom: 15px;">暂无记录</div>';
+            } else {
+                html += '<div style="margin-bottom: 15px;">';
+                battleReplayLog.forEach((r, i) => {
+                    const relStr = `${Math.floor(r.elapsed / 60)}:${String(r.elapsed % 60).padStart(2, '0')}`;
+                    html += `<div style="padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;"><span style="color: #4f46e5; font-weight: bold;">#${i + 1}</span> <span>${r.question}</span> <span style="color: #10b981;">← ${r.byName}</span> <span style="color: #666;">（${r.time}，耗时 ${relStr}，+${r.points}分）</span></div>`;
+                });
+                html += '</div>';
+            }
+            html += `<div style="font-weight: bold; color: #4f46e5; margin-bottom: 8px;">🔤 开字母记录</div>`;
+            if (openedLettersHistory.length === 0) {
+                html += '<div style="color: #999; font-size: 13px;">未开启任何字母</div>';
+            } else {
+                html += '<div style="font-size: 13px;">';
+                openedLettersHistory.forEach(h => {
+                    html += `<div style="padding: 3px 0;">字母 <b>${h.letter.toUpperCase()}</b> — 由 ${h.byName} 申请开启（${h.time}）</div>`;
+                });
+                html += '</div>';
+            }
+            const unsolved = battleQuestions.filter(q => !q.isCorrect);
+            if (unsolved.length > 0) {
+                html += `<div style="font-weight: bold; color: #ef4444; margin-top: 15px; margin-bottom: 8px;">❌ 未猜出的题目</div>`;
+                html += '<div style="font-size: 13px;">';
+                unsolved.forEach(q => { html += `<div style="padding: 3px 0;">${q.name}（${q.pinyin}）</div>`; });
+                html += '</div>';
+            }
+            content.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
         function renderBattleUI() {
             renderBattlePlayers();
+            renderOpenedLetters();
+            renderVotePanel();
+            const endBtn = document.getElementById('btnEndBattle');
+            if (endBtn) endBtn.style.display = (isHost && battleState === 'playing') ? 'inline-block' : 'none';
             const qList = document.getElementById('battleQuestionsList');
             qList.innerHTML = '';
 
